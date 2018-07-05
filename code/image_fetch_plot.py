@@ -160,7 +160,7 @@ def draw_heatmap(image_filename, box_list, detection_values, marginal_values=[],
   delta_map = np.zeros((img_height, img_width), dtype=np.float)
   
   for i in range(0, len(box_list)):
-    box = box_list[i]
+    box = [int(v) for v in box_list[i]]
     x = box[0]
     y = box[1]
     w = box[2]
