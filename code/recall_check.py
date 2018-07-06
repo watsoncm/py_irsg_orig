@@ -2,26 +2,25 @@ import os
 import json
 import numpy as np
 
+import examples
 import data_pull as dp
 import image_fetch_wrappers as ifw
+import image_fetch_utils as ifu
 import image_fetch_plot as ifp
 
-with open('config.json') as f:
-    cfg_data = json.load(f)
-    out_path = cfg_data['file_paths']['output_path']
+
+def generate_data():
+    examples.ex5(range(150))
 
 
-def recall_check(num_samples=150, gm_method='original'):
+def recall_check(do_holdout=False, x_limit=-1):
     vgd, potentials, platt_mod, bin_mod, queries, ifdata = dp.get_all_data()
-    query_idxs = np.random.choice(queries['simple_graphs'].size,
-                                  size=num_samples, replace=False)
-    batch_path = out_path + gm_method + '_recall/'
-    if not os.path.exists(batch_path):
-        os.mkdir(batch_path)
-    for query_idx in query_idxs:
-        query = queries['simple_graphs'][query_idx].annotations
-        ifw.image_batch(query, query_idx, ifdata, batch_path,
-                        gm_method=gm_method, gen_plots=False)
+    tp_simple = ifu.get_partial_scene_matches(vgd['vg_data_test'],
+                                              queries['simple_graphs'])
+    data_simple = [('/home/watsonc/py_irsg_orig/output/original_simple',
+                    'orignal')]
+    ifp.r_at_k_plot_simple(data_simple, tp_simple, do_holdout=do_holdout,
+                           x_limit=x_limit)
 
 
 if __name__ == '__main__':

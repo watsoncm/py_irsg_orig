@@ -32,6 +32,8 @@ def r_at_k_plot_simple(data, ground_truth_map, do_holdout=False, x_limit=-1):
   
   for path_tup in data:
     vals = ifu.get_r_at_k_simple(path_tup[0], ground_truth_map, do_holdout)
+    print('vals:')
+    print(vals)
     plot_handle, = plt.plot(np.arange(len(vals)), vals, label=path_tup[1])
     plot_handles.append(plot_handle)
   
