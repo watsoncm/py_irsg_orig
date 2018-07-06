@@ -59,7 +59,7 @@ def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/"):
 
 def get_energy_metrics(image_ix, n_values, csv_path='/home/econser/School/Thesis/data/inference test/energies/'):
   import numpy as np
-  filename = csv_path + 'q{0:03}_energy_values.csv'.format(image_ix)
+  filename = csv_path + 'q{0:03d}_energy_values.csv'.format(image_ix)
   nrg = np.genfromtxt(filename, delimiter=',')
   sort_ix = np.argsort(nrg[:,1])
   low_energies = nrg[sort_ix][:n_values][:,0]
@@ -119,6 +119,8 @@ def get_r_at_k_simple(base_dir, gt_map, do_holdout=False, file_suffix='_energy_v
   for i in range(0, n_queries):
     filename = base_dir + 'q{:03d}'.format(i) + file_suffix + '.csv'
     if not os.path.isfile(filename):
+      print('file missing!')
+      print(filename)
       continue
     energies = np.genfromtxt(filename, delimiter=',', skip_header=1)
     sort_ix = np.argsort(energies[:,1])
@@ -132,6 +134,7 @@ def get_r_at_k_simple(base_dir, gt_map, do_holdout=False, file_suffix='_energy_v
       if len(true_positives) > 0:
         break
       recall[k] = 0.0
+    print('recall is {}'.format(recall))
     k_count += recall
   return k_count / n_queries
 

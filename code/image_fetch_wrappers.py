@@ -47,7 +47,7 @@ def image_batch(query, query_id, if_data, output_path, image_ix_subset=[], gen_p
       ifp.draw_best_objects(tracker, best_matches, energy, filename)
   print "total time: {0}, average time: {1}".format(np.sum(time_list), np.average(time_list))
   
-  file = open(output_path + "q{0}_energy_values.csv".format(query_id), "wb")
+  file = open(output_path + "q{:03d}_energy_values.csv".format(query_id), "wb")
   csv_writer = csv.writer(file)
   csv_writer.writerow(("image_ix", "energy"))
   for i in range(0, n_images):
