@@ -18,7 +18,7 @@ def recall_check(do_holdout=False, x_limit=-1, query_idx=None):
     vgd, potentials, platt_mod, bin_mod, queries, ifdata = dp.get_all_data()
     images = vgd['vg_data_test']
     tp_queries = queries['simple_graphs']
-    if query_idx is None:
+    if query_idx is not None:
         tp_queries = tp_queries[query_idx]
 
     tp_simple = ifu.get_partial_scene_matches(images, tp_queries)
@@ -28,4 +28,4 @@ def recall_check(do_holdout=False, x_limit=-1, query_idx=None):
 
 
 if __name__ == '__main__':
-    recall_check(query_idx=list(range(60)))
+    recall_check(query_idx=list(range(1, 10)))
