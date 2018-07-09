@@ -35,24 +35,24 @@ def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/"):
   print("loading vg_data file...")
   vgd_path = data_path + "vg_data.mat"
   vgd = sio.loadmat(vgd_path, struct_as_record=False, squeeze_me=True)
-  
+
   print("loading potentials data...")
   potentials_path = data_path + "potentials_s.mat"
   potentials = sio.loadmat(potentials_path, struct_as_record=False, squeeze_me=True)
-  
+
   print("loading binary model data...")
   binary_path = data_path + "binary_models_struct.mat"
   bin_mod_mat = sio.loadmat(binary_path, struct_as_record=False, squeeze_me=True)
   bin_mod = get_relationship_models(bin_mod_mat)
-  
+
   print("loading platt model data...")
   platt_path = data_path + "platt_models_struct.mat"
   platt_mod = sio.loadmat(platt_path, struct_as_record=False, squeeze_me=True)
-  
+
   print("loading test queries...")
   query_path = data_path + "simple_graphs.mat"
   queries = sio.loadmat(query_path, struct_as_record=False, squeeze_me=True)
-  
+
   return vgd, potentials, platt_mod, bin_mod, queries
 
 
@@ -298,7 +298,7 @@ def get_relationship_models(binary_model_mat):
 
 
 
-def get_object_detections(image_ix, potentials_mat, platt_mod):
+def get_object_detections(image_ix, potentials_mat, platt_mod, csv_data=None):
   """Get object detection data from an image
   Input:
     image_ix: image number
@@ -310,12 +310,13 @@ def get_object_detections(image_ix, potentials_mat, platt_mod):
   object_mask = [name[:3] == 'obj' for name in potentials_mat['potentials_s'].classes]
   object_mask = np.array(object_mask)
   object_names = potentials_mat['potentials_s'].classes[object_mask]
-  object_detections = get_class_detections(image_ix, potentials_mat, platt_mod, object_names)
+  object_detections = get_class_detections(image_ix, potentials_mat, platt_mod,
+                                           object_names, csv_data=csv_data)
   return object_detections
 
 
 
-def get_attribute_detections(image_ix, potentials_mat, platt_mod):
+def get_attribute_detections(image_ix, potentials_mat, platt_mod, csv_data=None):
   """Get object detection data from an image
   Input:
     image_ix: image number
@@ -327,43 +328,48 @@ def get_attribute_detections(image_ix, potentials_mat, platt_mod):
   attr_mask = [name[:3] == 'atr' for name in potentials_mat['potentials_s'].classes]
   attr_mask = np.array(attr_mask)
   attr_names = potentials_mat['potentials_s'].classes[attr_mask]
-  attr_detections = get_class_detections(image_ix, potentials_mat, platt_mod, attr_names)
+  attr_detections = get_class_detections(image_ix, potentials_mat, platt_mod,
+                                         attr_names, csv_data=csv_data)
   return attr_detections
 
 
 
-def get_class_detections(image_ix, potential_data, platt_mod, object_names, verbose=False):
+def get_class_detections(image_ix, potential_data, platt_mod, object_names,
+                         csv_data=None, verbose=False):
   """Generate box & score values for an image and set of object names
-  
+
   Args:
     image_ix (int): the image to generate detections from
     potential_data (.mat data): potential data (holds boxes, scores, and class to index map)
     platt_data (.mat data): holds platt model parameters
     object_names (numpy array of str): the names of the objects to detect
     verbose (bool): default 'False'
-  
+
   Returns:
     dict: object name (str) -> boxes (numpy array)
   """
   n_objects = object_names.shape[0]
   detections = np.empty(n_objects, dtype=np.ndarray)
-  
   box_coords = np.copy(potential_data['potentials_s'].boxes[image_ix])
+  # if csv_data is None:
+  #   box_coords = np.copy(potential_data['potentials_s'].boxes[image_ix])
+  # else:
+  #   box_coords = pass
   box_coords[:,2] -= box_coords[:,0]
   box_coords[:,3] -= box_coords[:,1]
-  
+
   class_to_index_keys = potential_data['potentials_s'].class_to_idx.serialization.keys
   class_to_index_vals = potential_data['potentials_s'].class_to_idx.serialization.values
   obj_id_dict = dict(zip(class_to_index_keys, class_to_index_vals))
-  
+
   det_ix = 0
   for o in object_names:
     if o not in obj_id_dict:
       continue
-    
+
     obj_ix = obj_id_dict[o]
     obj_ix -= 1 # matlab is 1-based
-    
+
     a = 1.0
     b = 1.0
     platt_keys = platt_mod['platt_models'].s_models.serialization.keys
@@ -373,13 +379,11 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names, verb
       platt_coeff = platt_dict[o]
       a = platt_coeff[0]
       b = platt_coeff[1]
-    
+
     scores = potential_data['potentials_s'].scores[image_ix][:,obj_ix]
     scores = 1.0 / (1.0 + np.exp(a * scores + b))
-    
+
     n_detections = scores.shape[0]
-    scores = scores.reshape(n_detections, 1)
-    
     class_det = np.concatenate((box_coords, scores), axis=1)
     detections[det_ix] = class_det
     if verbose: print "%d: %s" % (det_ix, o)
