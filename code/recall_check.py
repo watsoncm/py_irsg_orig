@@ -28,4 +28,4 @@ def recall_check(do_holdout=False, x_limit=-1, query_idx=None):
 
 
 if __name__ == '__main__':
-    recall_check(query_idx=list(range(1, 10)))
+    recall_check(x_limit=100)
