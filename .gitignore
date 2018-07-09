@@ -1,3 +1,4 @@
 *.pyc
 csv/
 !csv/.gitkeep
+csv.tar.gz
