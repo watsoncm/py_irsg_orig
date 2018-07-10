@@ -1,4 +1,5 @@
 *.pyc
 csv/
+data/all_data.h5
 !csv/.gitkeep
 csv.tar.gz

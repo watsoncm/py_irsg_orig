@@ -38,30 +38,108 @@ def transfer_scores(ifdata, root_path, is_attr=False):
             write_scores(img_csv_path, result)
 
 
-def transfer_class_to_idx(ifdata, csv_path):
+def transfer_class_to_idx(ifdata, path):
+    """Transfer class to index dictionary from Matlab format to CSV."""
     class_to_index = ifdata.potentials_data['potentials_s'].class_to_idx
     serial = class_to_index.serialization
-    with open(csv_path, 'w') as f:
+    with open(path, 'w') as f:
         csv_writer = csv.writer(f)
         for key, val in tqdm(zip(serial.keys, serial.values),
                              desc='class/index'):
             csv_writer.writerow((key, val))
 
 
-def convert_all_to_csv():
+def generate_image_csvs(ifdata, root_path):
+    """Generate a single CSV for each image with all unary potential data."""
+    image_idx_arrays = []
+    name_arrays = []
+    box_idx_arrays = []
+    value_arrays = []
+    dtype = [('name', 'U24'),
+             ('box_idx', 'i4'),
+             ('b0', 'f4'),
+             ('b1', 'f4'),
+             ('b2', 'f4'),
+             ('b3', 'f4'),
+             ('score', 'U10')]
+
+
+    for image_idx in tqdm(np.arange(ifdata.vg_data.size), desc='images'):
+        csv_name = 'irsg_{}.csv'.format(image_idx)
+        csv_path = os.path.join(root_path, csv_name)
+        with open(csv_path, 'w') as f:
+            writer = csv.writer(f)
+            ifdata.configure(image_idx, None)
+            for desc, detections in [('attrs', ifdata.attribute_detections),
+                                     ('objs', ifdata.object_detections)]:
+                for name, values in tqdm(detections.iteritems(),
+                                         total=len(detections), desc=desc):
+                    output_array = np.empty(values.shape[0], dtype=dtype)
+                    output_array['name'] = np.full(values.shape[0], name, dtype='U25')
+                    output_array['box_idx'] = np.arange(values.shape[0])
+                    for i in range(4):
+                        output_array['b' + str(i)] = values[:, i]
+                    output_array['score'] = np.around(values[:, 4], decimals=6)
+                    writer.writerows(output_array)
+
+
+def generate_single_csv(ifdata, csv_path):
+    """Generate a single CSV for each image with all unary potential data."""
+    image_idx_arrays = []
+    name_arrays = []
+    box_idx_arrays = []
+    value_arrays = []
+    dtype = [('image_idx', 'i4'),
+             ('name', 'U20'),
+             ('box_idx', 'i4'),
+             ('b0', 'i4'),
+             ('b1', 'i4'),
+             ('b2', 'i4'),
+             ('b3', 'i4'),
+             ('score', 'f4')]
+
+    for image_idx in tqdm(np.arange(ifdata.vg_data.size)[:2], desc='images'):
+        ifdata.configure(image_idx, None)
+        for desc, detections in [('attrs', ifdata.attribute_detections),
+                                 ('objs', ifdata.object_detections)]:
+            for name, values in tqdm(detections.iteritems(),
+                                     total=len(detections), desc=desc):
+                image_idx_arrays.append(np.full(values.shape[0], image_idx))
+                name_arrays.append(np.full(values.shape[0], name, dtype='U20'))
+                box_idx_arrays.append(np.arange(values.shape[0]))
+                value_arrays.append(values)
+
+    value_array = np.vstack(value_arrays)
+    output_array = np.empty(value_array.shape[0], dtype=dtype)
+    output_array['image_idx'] = np.concatenate(image_idx_arrays)
+    output_array['name'] = np.concatenate(name_arrays)
+    output_array['box_idx'] = np.concatenate(box_idx_arrays)
+    for i in range(4):
+        output_array['b' + str(i)] = value_array[:, i]
+    output_array['score'] = value_array[:, 4]
+    np.savetxt(csv_path, output_array, fmt='%d,%s,%d,%d,%d,%d,%d,%.6f')
+
+
+def convert_all_to_csv(by_image=True):
     """Converts all Matlab files into corresponding CSV files."""
     ifdata = dp.get_ifdata()
-    obj_path = os.path.join(csv_path, 'obj_files')
-    attr_path = os.path.join(csv_path, 'attr_files')
-    class_to_idx_path = os.path.join(csv_path, 'class_to_idx.csv')
+    if by_image:
+        image_csv_path = os.path.join(csv_path, 'image_files')
+        if not os.path.exists(image_csv_path):
+            os.mkdir(image_csv_path)
+        generate_image_csvs(ifdata, image_csv_path)
+    else:
+        obj_path = os.path.join(csv_path, 'obj_files')
+        attr_path = os.path.join(csv_path, 'attr_files')
+        class_to_idx_path = os.path.join(csv_path, 'class_to_idx.csv')
 
-    for path in (obj_path, attr_path):
-        if not os.path.exists(path):
-            os.mkdir(path)
+        for path in (obj_path, attr_path):
+            if not os.path.exists(path):
+                os.mkdir(path)
 
-    # transfer_scores(ifdata, obj_path)
-    # transfer_scores(ifdata, attr_path, is_attr=True)
-    transfer_class_to_idx(ifdata, class_to_idx_path)
+        transfer_scores(ifdata, obj_path)
+        transfer_scores(ifdata, attr_path, is_attr=True)
+        transfer_class_to_idx(ifdata, class_to_idx_path)
 
 
 if __name__ == '__main__':

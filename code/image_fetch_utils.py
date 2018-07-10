@@ -1,7 +1,10 @@
+import re
 import image_fetch_core as ifc
 import numpy as np
 import scipy.io as sio
 import os.path
+from tqdm import tqdm
+
 
 class RelationshipParameters (object):
   def __init__(self, platt_a, platt_b, gmm_weights, gmm_mu, gmm_sigma):
@@ -17,7 +20,7 @@ class RelationshipParameters (object):
 # Functions for reading and manipulating the MATLAB .mat files into more
 #  python-friendly structures
 #===============================================================================
-def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/"):
+def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/", csv_path=None):
   """
   load the data files for use in running the model.
   expects the files to be all in the same directory
@@ -35,31 +38,57 @@ def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/"):
   print("loading vg_data file...")
   vgd_path = data_path + "vg_data.mat"
   vgd = sio.loadmat(vgd_path, struct_as_record=False, squeeze_me=True)
-
+  
   print("loading potentials data...")
-  potentials_path = data_path + "potentials_s.mat"
-  potentials = sio.loadmat(potentials_path, struct_as_record=False, squeeze_me=True)
-
+  if csv_path is not None:
+    part_arrays = []
+    image_idx_arrays = []
+    csv_dir_path = os.path.join(csv_path, 'image_files')
+    for csv_name in tqdm(os.listdir(csv_dir_path), desc='images'):
+      image_idx = re.findall(r'\d+', csv_name)
+      csv_path = os.path.join(csv_dir_path, csv_name)
+      print('yeet')
+      part_array = np.loadtxt(csv_path, delimiter=',',
+                              dtype=[('name', 'U25'),
+                                     ('box_idx', 'i4'),
+                                     ('b0', 'f4'),
+                                     ('b1', 'f4'),
+                                     ('b2', 'f4'),
+                                     ('b3', 'f4'),
+                                     ('score', 'f4')])
+      print('done')
+      image_idx_array = np.full(part_array.shape[0], image_idx,
+                                dtype=[('image_idx', 'i4')])
+      part_arrays.append(part_array)
+      image_idx_arrays.append(image_idx_array)
+      print('other')
+    part_array = np.vstack(part_arrays)
+    image_idx_array = np.vstack(image_idx_arrays)
+    potentials = np.hstack((image_idx_array, part_array))
+  else:
+    potentials_path = data_path + "potentials_s.mat"
+    potentials = sio.loadmat(potentials_path, struct_as_record=False, squeeze_me=True)
+  
   print("loading binary model data...")
   binary_path = data_path + "binary_models_struct.mat"
   bin_mod_mat = sio.loadmat(binary_path, struct_as_record=False, squeeze_me=True)
   bin_mod = get_relationship_models(bin_mod_mat)
-
+  
   print("loading platt model data...")
   platt_path = data_path + "platt_models_struct.mat"
   platt_mod = sio.loadmat(platt_path, struct_as_record=False, squeeze_me=True)
-
+  
   print("loading test queries...")
   query_path = data_path + "simple_graphs.mat"
   queries = sio.loadmat(query_path, struct_as_record=False, squeeze_me=True)
-
+  
   return vgd, potentials, platt_mod, bin_mod, queries
 
 
 
 def get_energy_metrics(image_ix, n_values, csv_path='/home/econser/School/Thesis/data/inference test/energies/'):
   import numpy as np
-  filename = csv_path + 'q{0:03d}_energy_values.csv'.format(image_ix)
+  filename = csv_path + 'q{0:03}_energy_values.csv'.format(image_ix)
   nrg = np.genfromtxt(filename, delimiter=',')
   sort_ix = np.argsort(nrg[:,1])
   low_energies = nrg[sort_ix][:n_values][:,0]
@@ -119,8 +148,6 @@ def get_r_at_k_simple(base_dir, gt_map, do_holdout=False, file_suffix='_energy_v
   for i in range(0, n_queries):
     filename = base_dir + 'q{:03d}'.format(i) + file_suffix + '.csv'
     if not os.path.isfile(filename):
-      print('file missing!')
-      print(filename)
       continue
     energies = np.genfromtxt(filename, delimiter=',', skip_header=1)
     sort_ix = np.argsort(energies[:,1])
@@ -134,7 +161,6 @@ def get_r_at_k_simple(base_dir, gt_map, do_holdout=False, file_suffix='_energy_v
       if len(true_positives) > 0:
         break
       recall[k] = 0.0
-    print('recall is {}'.format(recall))
     k_count += recall
   return k_count / n_queries
 
@@ -298,7 +324,7 @@ def get_relationship_models(binary_model_mat):
 
 
 
-def get_object_detections(image_ix, potentials_mat, platt_mod, csv_data=None):
+def get_object_detections(image_ix, potentials_mat, platt_mod, csv_path=None):
   """Get object detection data from an image
   Input:
     image_ix: image number
@@ -310,13 +336,12 @@ def get_object_detections(image_ix, potentials_mat, platt_mod, csv_data=None):
   object_mask = [name[:3] == 'obj' for name in potentials_mat['potentials_s'].classes]
   object_mask = np.array(object_mask)
   object_names = potentials_mat['potentials_s'].classes[object_mask]
-  object_detections = get_class_detections(image_ix, potentials_mat, platt_mod,
-                                           object_names, csv_data=csv_data)
+  object_detections = get_class_detections(image_ix, potentials_mat, platt_mod, object_names)
   return object_detections
 
 
 
-def get_attribute_detections(image_ix, potentials_mat, platt_mod, csv_data=None):
+def get_attribute_detections(image_ix, potentials_mat, platt_mod, csv_path=None):
   """Get object detection data from an image
   Input:
     image_ix: image number
@@ -328,48 +353,43 @@ def get_attribute_detections(image_ix, potentials_mat, platt_mod, csv_data=None)
   attr_mask = [name[:3] == 'atr' for name in potentials_mat['potentials_s'].classes]
   attr_mask = np.array(attr_mask)
   attr_names = potentials_mat['potentials_s'].classes[attr_mask]
-  attr_detections = get_class_detections(image_ix, potentials_mat, platt_mod,
-                                         attr_names, csv_data=csv_data)
+  attr_detections = get_class_detections(image_ix, potentials_mat, platt_mod, attr_names)
   return attr_detections
 
 
 
-def get_class_detections(image_ix, potential_data, platt_mod, object_names,
-                         csv_data=None, verbose=False):
+def get_class_detections(image_ix, potential_data, platt_mod, object_names, verbose=False):
   """Generate box & score values for an image and set of object names
-
+  
   Args:
     image_ix (int): the image to generate detections from
     potential_data (.mat data): potential data (holds boxes, scores, and class to index map)
     platt_data (.mat data): holds platt model parameters
     object_names (numpy array of str): the names of the objects to detect
     verbose (bool): default 'False'
-
+  
   Returns:
     dict: object name (str) -> boxes (numpy array)
   """
   n_objects = object_names.shape[0]
   detections = np.empty(n_objects, dtype=np.ndarray)
+  
   box_coords = np.copy(potential_data['potentials_s'].boxes[image_ix])
-  # if csv_data is None:
-  #   box_coords = np.copy(potential_data['potentials_s'].boxes[image_ix])
-  # else:
-  #   box_coords = pass
   box_coords[:,2] -= box_coords[:,0]
   box_coords[:,3] -= box_coords[:,1]
-
+  
   class_to_index_keys = potential_data['potentials_s'].class_to_idx.serialization.keys
   class_to_index_vals = potential_data['potentials_s'].class_to_idx.serialization.values
   obj_id_dict = dict(zip(class_to_index_keys, class_to_index_vals))
-
+  
   det_ix = 0
   for o in object_names:
     if o not in obj_id_dict:
       continue
-
+    
     obj_ix = obj_id_dict[o]
     obj_ix -= 1 # matlab is 1-based
-
+    
     a = 1.0
     b = 1.0
     platt_keys = platt_mod['platt_models'].s_models.serialization.keys
@@ -379,11 +399,13 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names,
       platt_coeff = platt_dict[o]
       a = platt_coeff[0]
       b = platt_coeff[1]
-
+    
     scores = potential_data['potentials_s'].scores[image_ix][:,obj_ix]
     scores = 1.0 / (1.0 + np.exp(a * scores + b))
-
+    
     n_detections = scores.shape[0]
+    scores = scores.reshape(n_detections, 1)
+    
     class_det = np.concatenate((box_coords, scores), axis=1)
     detections[det_ix] = class_det
     if verbose: print "%d: %s" % (det_ix, o)
