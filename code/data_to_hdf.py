@@ -86,15 +86,23 @@ def transfer_potentials(hf, potentials):
     class_group.create_dataset('values', data=class_to_idx.values.astype(int))
 
 
+def transfer_platt_mod(hf, platt_mod):
+    platt_data = platt_mod['platt_models'].s_models.serialization
+    platt_group = hf.create_group('platt_mod')
+    s_group = platt_group.create_group('s_models')
+    str_dtype = h5py.special_dtype(vlen=str)
+    s_group.create_dataset('keys', data=platt_data.keys, dtype=str_dtype)
+    s_group.create_dataset('values', data=np.array(list(platt_data.values)))
+
+
 def convert_all_to_hdf():
     """Converts all Matlab files into a single HDF file."""
     vgd, potentials, platt_mod, bin_mod, queries = dp.get_supplemental_data()
-    import pdb; pdb.set_trace()
     path = os.path.join(data_path, 'all_data.h5')
     with h5py.File(path, 'w') as hf:
-        transfer_vgd(hf, vgd)
-        import pdb; pdb.set_trace()
-        transfer_potentials(hf, potentials)
+        # transfer_vgd(hf, vgd)
+        # transfer_potentials(hf, potentials)
+        transfer_platt_mod(hf, platt_mod)
 
 if __name__ == '__main__':
     convert_all_to_hdf()
