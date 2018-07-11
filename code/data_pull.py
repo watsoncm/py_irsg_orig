@@ -23,26 +23,26 @@ ifdata = None
 data_loaded = False
 
 
-def _load(use_hdf=False):
+def _load(use_hdf=False, reload=False):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  if not data_loaded:
+  if not data_loaded or reload:
     data = ifu.get_hdf_data(data_path) if use_hdf else ifu.get_mat_data(data_path)
     vgd, potentials, platt_mod, bin_mod, queries = data
     ifdata = ifd.ImageFetchDataset(vgd['vg_data_test'], potentials, platt_mod,
                                    bin_mod, img_path, use_hdf=use_hdf)
   data_loaded = True
 
-def get_all_data(use_hdf=False):
+def get_all_data(use_hdf=False, reload=False):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load(use_hdf=use_hdf)
+  _load(use_hdf=use_hdf, reload=reload)
   return vgd, potentials, platt_mod, bin_mod, queries, ifdata
 
-def get_ifdata(use_hdf=False):
+def get_ifdata(use_hdf=False, reload=False):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load(use_hdf=use_hdf)
+  _load(use_hdf=use_hdf, reload=reload)
   return ifdata
 
-def get_supplemental_data(use_hdf=False):
+def get_supplemental_data(use_hdf=False, reload=False):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load(use_hdf=use_hdf)
+  _load(use_hdf=use_hdf, reload=reload)
   return vgd, potentials, platt_mod, bin_mod, queries
