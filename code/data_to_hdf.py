@@ -33,16 +33,21 @@ def transfer_vgd(hf, vgd):
             binary_triples = data[img].annotations.binary_triples
             str_dtype = h5py.special_dtype(vlen=str)
 
-            for triple_group, triples in ((unary_group, unary_triples),
-                                          (binary_group, binary_triples)):
+            triple_iter = ((unary_group, unary_triples, 'O'),
+                           (binary_group, binary_triples, int))
+            for triple_group, triples, obj_dtype in triple_iter:
                 predicates = np.array([triple.predicate for triple in triples],
                                       dtype='O')
                 subjects = np.array([triple.subject for triple in triples])
-                objects = np.array([triple.object for triple in triples])
+                objects = np.array([triple.object for triple in triples],
+                                   dtype=obj_dtype)
+
+                obj_data_dtype = str_dtype if obj_dtype is 'O' else obj_dtype
                 triple_group.create_dataset('predicates', data=predicates,
                                             dtype=str_dtype)
                 triple_group.create_dataset('subjects', data=subjects)
-                triple_group.create_dataset('objects', data=objects)
+                triple_group.create_dataset('objects', data=objects,
+                                            dtype=obj_data_dtype)
 
             # add objects
             image_objs = data[img].annotations.objects
@@ -84,6 +89,7 @@ def transfer_potentials(hf, potentials):
 def convert_all_to_hdf():
     """Converts all Matlab files into a single HDF file."""
     vgd, potentials, platt_mod, bin_mod, queries = dp.get_supplemental_data()
+    import pdb; pdb.set_trace()
     path = os.path.join(data_path, 'all_data.h5')
     with h5py.File(path, 'w') as hf:
         transfer_vgd(hf, vgd)
