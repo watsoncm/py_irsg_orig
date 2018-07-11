@@ -33,7 +33,6 @@ def convert_all_to_hdf():
         class_group = pot_group.create_group('class_to_idx')
         str_dtype = h5py.special_dtype(vlen=str)
         class_group.create_dataset('keys', data=class_to_idx.keys, dtype=str_dtype)
-        import pdb; pdb.set_trace()
         class_group.create_dataset('values', data=class_to_idx.values.astype(int))
 
 

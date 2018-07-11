@@ -83,44 +83,7 @@ def generate_image_csvs(ifdata, root_path):
                     writer.writerows(output_array)
 
 
-def generate_single_csv(ifdata, csv_path):
-    """Generate a single CSV for each image with all unary potential data."""
-    image_idx_arrays = []
-    name_arrays = []
-    box_idx_arrays = []
-    value_arrays = []
-    dtype = [('image_idx', 'i4'),
-             ('name', 'U20'),
-             ('box_idx', 'i4'),
-             ('b0', 'i4'),
-             ('b1', 'i4'),
-             ('b2', 'i4'),
-             ('b3', 'i4'),
-             ('score', 'f4')]
-
-    for image_idx in tqdm(np.arange(ifdata.vg_data.size)[:2], desc='images'):
-        ifdata.configure(image_idx, None)
-        for desc, detections in [('attrs', ifdata.attribute_detections),
-                                 ('objs', ifdata.object_detections)]:
-            for name, values in tqdm(detections.iteritems(),
-                                     total=len(detections), desc=desc):
-                image_idx_arrays.append(np.full(values.shape[0], image_idx))
-                name_arrays.append(np.full(values.shape[0], name, dtype='U20'))
-                box_idx_arrays.append(np.arange(values.shape[0]))
-                value_arrays.append(values)
-
-    value_array = np.vstack(value_arrays)
-    output_array = np.empty(value_array.shape[0], dtype=dtype)
-    output_array['image_idx'] = np.concatenate(image_idx_arrays)
-    output_array['name'] = np.concatenate(name_arrays)
-    output_array['box_idx'] = np.concatenate(box_idx_arrays)
-    for i in range(4):
-        output_array['b' + str(i)] = value_array[:, i]
-    output_array['score'] = value_array[:, 4]
-    np.savetxt(csv_path, output_array, fmt='%d,%s,%d,%d,%d,%d,%d,%.6f')
-
-
-def convert_all_to_csv(by_image=True):
+def convert_all_to_csv(by_image=False):
     """Converts all Matlab files into corresponding CSV files."""
     ifdata = dp.get_ifdata()
     if by_image:

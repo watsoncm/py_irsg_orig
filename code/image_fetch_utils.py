@@ -1,4 +1,5 @@
 import re
+import h5py
 import image_fetch_core as ifc
 import numpy as np
 import scipy.io as sio
@@ -20,7 +21,7 @@ class RelationshipParameters (object):
 # Functions for reading and manipulating the MATLAB .mat files into more
 #  python-friendly structures
 #===============================================================================
-def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/", csv_path=None):
+def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/", use_hdf=None):
   """
   load the data files for use in running the model.
   expects the files to be all in the same directory
@@ -40,31 +41,19 @@ def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/", csv
   vgd = sio.loadmat(vgd_path, struct_as_record=False, squeeze_me=True)
   
   print("loading potentials data...")
-  if csv_path is not None:
-    part_arrays = []
-    image_idx_arrays = []
-    csv_dir_path = os.path.join(csv_path, 'image_files')
-    for csv_name in tqdm(os.listdir(csv_dir_path), desc='images'):
-      image_idx = re.findall(r'\d+', csv_name)
-      csv_path = os.path.join(csv_dir_path, csv_name)
-      print('yeet')
-      part_array = np.loadtxt(csv_path, delimiter=',',
-                              dtype=[('name', 'U25'),
-                                     ('box_idx', 'i4'),
-                                     ('b0', 'f4'),
-                                     ('b1', 'f4'),
-                                     ('b2', 'f4'),
-                                     ('b3', 'f4'),
-                                     ('score', 'f4')])
-      print('done')
-      image_idx_array = np.full(part_array.shape[0], image_idx,
-                                dtype=[('image_idx', 'i4')])
-      part_arrays.append(part_array)
-      image_idx_arrays.append(image_idx_array)
-      print('other')
-    part_array = np.vstack(part_arrays)
-    image_idx_array = np.vstack(image_idx_arrays)
-    potentials = np.hstack((image_idx_array, part_array))
+  if use_hdf:
+    potentials_path = os.path.join(data_path, 'all_data.h5')
+    potentials = {'boxes': {}, 'scores': {}}
+    with h5py.File(potentials_path, 'r') as hf:
+        for box_name in tqdm(hf['potentials']['boxes'].keys(),
+                             desc='boxes/scores'):
+            box_idx = int(re.findall(r'\d+', box_name)[0])
+            hf_pots = hf['potentials']
+            potentials['boxes'][box_idx] = hf_pots['boxes'][box_name]
+            potentials['scores'][box_idx] = hf_pots['scores'][box_name]
+        keys = hf_pots['class_to_idx']['keys']
+        values = hf_pots['class_to_idx']['values']
+        potentials['class_to_idx'] = dict(zip(keys, values))
   else:
     potentials_path = data_path + "potentials_s.mat"
     potentials = sio.loadmat(potentials_path, struct_as_record=False, squeeze_me=True)
