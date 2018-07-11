@@ -21,7 +21,7 @@ class RelationshipParameters (object):
 # Functions for reading and manipulating the MATLAB .mat files into more
 #  python-friendly structures
 #===============================================================================
-def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/", use_hdf=None):
+def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/"):
   """
   load the data files for use in running the model.
   expects the files to be all in the same directory
@@ -41,22 +41,8 @@ def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/", use
   vgd = sio.loadmat(vgd_path, struct_as_record=False, squeeze_me=True)
   
   print("loading potentials data...")
-  if use_hdf:
-    potentials_path = os.path.join(data_path, 'all_data.h5')
-    potentials = {'boxes': {}, 'scores': {}}
-    with h5py.File(potentials_path, 'r') as hf:
-        for box_name in tqdm(hf['potentials']['boxes'].keys(),
-                             desc='boxes/scores'):
-            box_idx = int(re.findall(r'\d+', box_name)[0])
-            hf_pots = hf['potentials']
-            potentials['boxes'][box_idx] = hf_pots['boxes'][box_name]
-            potentials['scores'][box_idx] = hf_pots['scores'][box_name]
-        keys = hf_pots['class_to_idx']['keys']
-        values = hf_pots['class_to_idx']['values']
-        potentials['class_to_idx'] = dict(zip(keys, values))
-  else:
-    potentials_path = data_path + "potentials_s.mat"
-    potentials = sio.loadmat(potentials_path, struct_as_record=False, squeeze_me=True)
+  potentials_path = data_path + "potentials_s.mat"
+  potentials = sio.loadmat(potentials_path, struct_as_record=False, squeeze_me=True)
   
   print("loading binary model data...")
   binary_path = data_path + "binary_models_struct.mat"
@@ -73,6 +59,54 @@ def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/", use
   
   return vgd, potentials, platt_mod, bin_mod, queries
 
+
+def get_hdf_data(data_path="/home/econser/School/Thesis/code/model_params/"):
+  """
+  load the data files for use in running the model.
+  expects the files to be all in the same directory
+
+  Args:
+    data_path: the fully-quaified path to the data files
+
+  Returns:
+    vgd (.mat file): vg_data file
+    potentials (.mat file): potentials file
+    platt_mod (.mat file): platt model file
+    bin_mod (.mat file): GMM parameters
+    queries (.mat file): queries
+  """
+  print("loading vg_data file...")
+  vgd_path = data_path + "vg_data.mat"
+  vgd = sio.loadmat(vgd_path, struct_as_record=False, squeeze_me=True)
+  
+  print("loading potentials data...")
+  potentials_path = os.path.join(data_path, 'all_data.h5')
+  potentials = {'boxes': {}, 'scores': {}}
+  with h5py.File(potentials_path, 'r') as hf:
+    for box_name in tqdm(hf['potentials']['boxes'].keys(),
+                         desc='boxes/scores'):
+      box_idx = int(re.findall(r'\d+', box_name)[0])
+      hf_pots = hf['potentials']
+      potentials['boxes'][box_idx] = hf_pots['boxes'][box_name].value
+      potentials['scores'][box_idx] = hf_pots['scores'][box_name].value
+      keys = hf_pots['class_to_idx']['keys'].value
+      values = hf_pots['class_to_idx']['values'].value
+      potentials['class_to_idx'] = dict(zip(keys, values))
+  
+  print("loading binary model data...")
+  binary_path = data_path + "binary_models_struct.mat"
+  bin_mod_mat = sio.loadmat(binary_path, struct_as_record=False, squeeze_me=True)
+  bin_mod = get_relationship_models(bin_mod_mat)
+  
+  print("loading platt model data...")
+  platt_path = data_path + "platt_models_struct.mat"
+  platt_mod = sio.loadmat(platt_path, struct_as_record=False, squeeze_me=True)
+  
+  print("loading test queries...")
+  query_path = data_path + "simple_graphs.mat"
+  queries = sio.loadmat(query_path, struct_as_record=False, squeeze_me=True)
+  
+  return vgd, potentials, platt_mod, bin_mod, queries
 
 
 def get_energy_metrics(image_ix, n_values, csv_path='/home/econser/School/Thesis/data/inference test/energies/'):

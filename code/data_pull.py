@@ -10,7 +10,7 @@ cfg_data = json.load(cfg_file)
 
 out_path = cfg_data['file_paths']['output_path']
 img_path = cfg_data['file_paths']['image_path']
-mat_path = cfg_data['file_paths']['mat_path']
+data_path = cfg_data['file_paths']['mat_path']
 
 # load model params
 vgd = None
@@ -26,9 +26,8 @@ data_loaded = False
 def _load(use_hdf=False):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
   if not data_loaded:
-    vgd, potentials, platt_mod, bin_mod, queries = ifu.get_mat_data(mat_path, use_hdf=use_hdf)
-    print(potentials)
-    import pdb; pdb.set_trace()
+    data = ifu.get_hdf_data(data_path) if use_hdf else ifu.get_mat_data(data_path)
+    vgd, potentials, platt_mod, bin_mod, queries = data
     ifdata = ifd.ImageFetchDataset(vgd['vg_data_test'], potentials, platt_mod,
                                    bin_mod, img_path, use_hdf=use_hdf)
   data_loaded = True
