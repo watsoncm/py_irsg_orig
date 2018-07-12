@@ -86,13 +86,16 @@ def transfer_potentials(hf, potentials):
     pairs = enumerate(zip(pot_data.boxes, pot_data.scores))
     for box_idx, (box, scores) in tqdm(pairs, desc='boxes/scores',
                                        total=pot_data.boxes.shape[0]):
-        box_name = 'box_{}'.format(box_idx)
-        box_group.create_dataset(box_name, data=box)
-        score_group.create_dataset(box_name, data=scores)
+        image_name = 'image_{}'.format(box_idx)
+        box_group.create_dataset(image_name, data=box)
+        score_group.create_dataset(image_name, data=scores)
+
+    # add class names
+    str_dtype = h5py.special_dtype(vlen=str)
+    pot_group.create_dataset('classes', data=pot_data.classes, dtype=str_dtype)
 
     # add class to index data
     class_group = pot_group.create_group('class_to_idx')
-    str_dtype = h5py.special_dtype(vlen=str)
     class_group.create_dataset('keys', data=class_to_idx.keys, dtype=str_dtype)
     class_group.create_dataset('values', data=class_to_idx.values.astype(int))
 

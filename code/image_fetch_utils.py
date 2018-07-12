@@ -60,94 +60,6 @@ def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/"):
   return vgd, potentials, platt_mod, bin_mod, queries
 
 
-def get_hdf_data(data_path="/home/econser/School/Thesis/code/model_params/"):
-  """
-  load the data files for use in running the model.
-  expects the files to be all in the same directory
-
-  Args:
-    data_path: the fully-quaified path to the data files
-
-  Returns:
-    vgd (.mat file): vg_data file
-    potentials (.mat file): potentials file
-    platt_mod (.mat file): platt model file
-    bin_mod (.mat file): GMM parameters
-    queries (.mat file): queries
-  """
-  hdf_path = os.path.join(data_path, 'all_data.h5')
-
-  with h5py.File(hdf_path, 'r') as hf:
-
-    # load vgd image data 
-    print("loading vg_data file...")
-    vgd = {}
-    for dataset_name in tqdm(hf['vgd'].keys(), desc='vgd sets'):
-      vgd[dataset_name] = {}
-      for image_name in tqdm(hf['vgd'][dataset_name].keys()):
-        image_idx = int(re.findall(r'\d+', image_name)[0])
-        vgd[dataset_name][image_idx] = {}
-
-        # transfer image url
-        hf_image = hf['vgd'][dataset_name][image_name]
-        vgd_image = vgd[dataset_name][image_idx]
-        vgd_image['image_url'] = hf_image.attrs['image_url']
-
-        # transfer triples
-        for triple_type in ('unary_triples', 'binary_triples'):
-          triples = hf_image[triple_type]
-          vgd_image[triple_type] = {}
-          for triple_name in vgd_image[triple_type].keys():
-            triple_idx = int(re.findall(r'\d+', triple_name)[0])
-            vgd_image[name][triple_idx] = {}
-            hf_triple = triples[triple_name]
-            vgd_triple = vgd_image[name][triple_idx]
-            for data_name in ('predicates', 'subjects', 'objects'):
-              vgd_triple[data_name] = hf_triple[data_name].value
-
-        # transfer objects
-        vgd_image['objects'] = {}
-        for object_name in hf_image['objects']:
-            object_idx = int(re.findall(r'\d+', object_name)[0])
-            vgd_image['objects'][object_idx] = {}
-            hf_object = hf_image['objects'][object_name]
-            vgd_object = vgd_image['objects'][object_idx]
-            vgd_object['bbox'] = hf_object.attrs['bbox']
-            vgd_object['names'] = hf_object['names'].value
-
-    # load potential data 
-    print("loading potentials data...")
-    potentials = {'boxes': {}, 'scores': {}}
-    for box_name in tqdm(hf['potentials']['boxes'].keys(),
-                         desc='boxes/scores'):
-      box_idx = int(re.findall(r'\d+', box_name)[0])
-      hf_pots = hf['potentials']
-
-      # transfer boxes and scores
-      potentials['boxes'][box_idx] = hf_pots['boxes'][box_name].value
-      potentials['scores'][box_idx] = hf_pots['scores'][box_name].value
-
-      # transfer class to index data
-      keys = hf_pots['class_to_idx']['keys'].value
-      values = hf_pots['class_to_idx']['values'].value
-      potentials['class_to_idx'] = dict(zip(keys, values))
-
-  print("loading binary model data...")
-  binary_path = data_path + "binary_models_struct.mat"
-  bin_mod_mat = sio.loadmat(binary_path, struct_as_record=False, squeeze_me=True)
-  bin_mod = get_relationship_models(bin_mod_mat)
-
-  print("loading platt model data...")
-  platt_path = data_path + "platt_models_struct.mat"
-  platt_mod = sio.loadmat(platt_path, struct_as_record=False, squeeze_me=True)
-
-  print("loading test queries...")
-  query_path = data_path + "simple_graphs.mat"
-  queries = sio.loadmat(query_path, struct_as_record=False, squeeze_me=True)
-
-  return vgd, potentials, platt_mod, bin_mod, queries
-
-
 def get_energy_metrics(image_ix, n_values, csv_path='/home/econser/School/Thesis/data/inference test/energies/'):
   import numpy as np
   filename = csv_path + 'q{0:03}_energy_values.csv'.format(image_ix)
@@ -386,7 +298,7 @@ def get_relationship_models(binary_model_mat):
 
 
 
-def get_object_detections(image_ix, potentials_mat, platt_mod, csv_path=None):
+def get_object_detections(image_ix, potentials_mat, platt_mod):
   """Get object detection data from an image
   Input:
     image_ix: image number
@@ -401,6 +313,11 @@ def get_object_detections(image_ix, potentials_mat, platt_mod, csv_path=None):
   object_detections = get_class_detections(image_ix, potentials_mat, platt_mod, object_names)
   return object_detections
 
+
+def get_object_detections_hdf(image_ix, hf):
+  classes = hf['potentials']['classes']
+  object_mask = np.array([name[:3] == 'obj' for name in classes])
+  return get_class_detections(image_ix, hf, classes[object_mask])
 
 
 def get_attribute_detections(image_ix, potentials_mat, platt_mod, csv_path=None):
@@ -418,6 +335,11 @@ def get_attribute_detections(image_ix, potentials_mat, platt_mod, csv_path=None)
   attr_detections = get_class_detections(image_ix, potentials_mat, platt_mod, attr_names)
   return attr_detections
 
+
+def get_attribute_detections_hdf(image_ix, hf):
+  classes = hf['potentials']['classes']
+  attr_mask = np.array([name[:3] == 'atr' for name in classes])
+  return get_class_detections(image_ix, hf, classes[attr_mask])
 
 
 def get_class_detections(image_ix, potential_data, platt_mod, object_names, verbose=False):
@@ -468,6 +390,48 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names, verb
     n_detections = scores.shape[0]
     scores = scores.reshape(n_detections, 1)
     
+    class_det = np.concatenate((box_coords, scores), axis=1)
+    detections[det_ix] = class_det
+    if verbose: print "%d: %s" % (det_ix, o)
+    det_ix += 1
+  return dict(zip(object_names, detections))
+
+
+def get_class_detections_hdf(image_ix, hf, object_names, verbose=False):
+  n_objects = object_names.shape[0]
+  detections = np.empty(n_objects, dtype=np.ndarray)
+
+  image_name = 'image_{}'.format(image_ix)
+  box_coords = np.copy(hf['potentials']['boxes'][image_name])
+  box_coords[:,2] -= box_coords[:,0]
+  box_coords[:,3] -= box_coords[:,1]
+
+  class_to_index = hf['potentials']['class_to_idx']
+  obj_id_dict = dict(zip(class_to_index['keys'], class_to_index['values']))
+
+  det_ix = 0
+  for o in object_names:
+    if o not in obj_id_dict:
+      continue
+
+    obj_ix = obj_id_dict[o]
+    obj_ix -= 1 # matlab is 1-based
+
+    a = 1.0
+    b = 1.0
+    platt_mod = hf['platt_mod']['s_models']
+    platt_dict = dict(zip(platt_mod['keys'], platt_mod['vals']))
+    if o in platt_dict:
+      platt_coeff = platt_dict[o]
+      a = platt_coeff[0]
+      b = platt_coeff[1]
+
+    scores = hf['potentials']['scores'][image_name][:, obj_ix]
+    scores = 1.0 / (1.0 + np.exp(a * scores + b))
+
+    n_detections = scores.shape[0]
+    scores = scores.reshape(n_detections, 1)
+
     class_det = np.concatenate((box_coords, scores), axis=1)
     detections[det_ix] = class_det
     if verbose: print "%d: %s" % (det_ix, o)
