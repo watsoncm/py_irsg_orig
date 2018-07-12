@@ -49,6 +49,16 @@ def transfer_class_to_idx(ifdata, path):
             csv_writer.writerow((key, val))
 
 
+def transfer_classes(ifdata, path):
+    """Transfer class to index dictionary from Matlab format to CSV."""
+    classes = ifdata.potentials_data['potentials_s'].classes
+    with open(path, 'w') as f:
+        csv_writer = csv.writer(f)
+        for class_name in tqdm(classes, desc='class/index'):
+            csv_writer.writerow((class_name,))
+
+
+
 def generate_image_csvs(ifdata, root_path):
     """Generate a single CSV for each image with all unary potential data."""
     image_idx_arrays = []
@@ -95,6 +105,7 @@ def convert_all_to_csv(by_image=False):
         obj_path = os.path.join(csv_path, 'obj_files')
         attr_path = os.path.join(csv_path, 'attr_files')
         class_to_idx_path = os.path.join(csv_path, 'class_to_idx.csv')
+        class_path = os.path.join(csv_path, 'classes.csv')
 
         for path in (obj_path, attr_path):
             if not os.path.exists(path):
@@ -103,6 +114,7 @@ def convert_all_to_csv(by_image=False):
         transfer_scores(ifdata, obj_path)
         transfer_scores(ifdata, attr_path, is_attr=True)
         transfer_class_to_idx(ifdata, class_to_idx_path)
+        transfer_classes(ifdata, class_path)
 
 
 if __name__ == '__main__':

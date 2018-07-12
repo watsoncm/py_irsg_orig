@@ -21,7 +21,7 @@ class RelationshipParameters (object):
 # Functions for reading and manipulating the MATLAB .mat files into more
 #  python-friendly structures
 #===============================================================================
-def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/"):
+def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/", get_potentials=True):
   """
   load the data files for use in running the model.
   expects the files to be all in the same directory
@@ -40,9 +40,12 @@ def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/"):
   vgd_path = data_path + "vg_data.mat"
   vgd = sio.loadmat(vgd_path, struct_as_record=False, squeeze_me=True)
   
-  print("loading potentials data...")
-  potentials_path = data_path + "potentials_s.mat"
-  potentials = sio.loadmat(potentials_path, struct_as_record=False, squeeze_me=True)
+  if get_potentials:
+    print("loading potentials data...")
+    potentials_path = data_path + "potentials_s.mat"
+    potentials = sio.loadmat(potentials_path, struct_as_record=False, squeeze_me=True)
+  else:
+    potentials = None
   
   print("loading binary model data...")
   binary_path = data_path + "binary_models_struct.mat"
@@ -158,7 +161,6 @@ def get_r_at_k_simple_old(base_dir, gt_map, file_suffix='_energy_values'):
       recall[k] = float(len(true_positives)) #/ len(gt_map[i])
       #print '   k:{:03d}  TP:{:03d}  POOL:{:03d}  ->  r@k{:0.3f}'.format(k, len(true_positives), len(gt_map[i]), recall[k])
     k_count += recall
-  import pdb; pdb.set_trace()
   return k_count / n_queries
 
 
@@ -298,7 +300,7 @@ def get_relationship_models(binary_model_mat):
 
 
 
-def get_object_detections(image_ix, potentials_mat, platt_mod):
+def get_object_detections(image_ix, potentials_mat, platt_mod, use_csv=False):
   """Get object detection data from an image
   Input:
     image_ix: image number
@@ -307,20 +309,13 @@ def get_object_detections(image_ix, potentials_mat, platt_mod):
   Output:
     dict: object name (str) -> boxes (numpy array of [x,y,w,h,p] entries), platt model applied to probabilites
   """
-  object_mask = [name[:3] == 'obj' for name in potentials_mat['potentials_s'].classes]
-  object_mask = np.array(object_mask)
-  object_names = potentials_mat['potentials_s'].classes[object_mask]
-  object_detections = get_class_detections(image_ix, potentials_mat, platt_mod, object_names)
-  return object_detections
-
-
-def get_object_detections_hdf(image_ix, hf):
-  classes = hf['potentials']['classes']
+  classes = potentials_mat['classes'] if use_csv else potentials_mat['potentials_s'].classes
   object_mask = np.array([name[:3] == 'obj' for name in classes])
-  return get_class_detections_hdf(image_ix, hf, classes[object_mask])
+  object_names = classes[object_mask]
+  return get_class_detections(image_ix, potentials_mat, platt_mod, object_names, use_csv=use_csv)
 
 
-def get_attribute_detections(image_ix, potentials_mat, platt_mod, csv_path=None):
+def get_attribute_detections(image_ix, potentials_mat, platt_mod, use_csv=False):
   """Get object detection data from an image
   Input:
     image_ix: image number
@@ -329,20 +324,15 @@ def get_attribute_detections(image_ix, potentials_mat, platt_mod, csv_path=None)
   Output:
     dict: attribute name (str) -> boxes (numpy array of [x,y,w,h,p] entries), platt model applied to probabilites
   """
-  attr_mask = [name[:3] == 'atr' for name in potentials_mat['potentials_s'].classes]
-  attr_mask = np.array(attr_mask)
-  attr_names = potentials_mat['potentials_s'].classes[attr_mask]
-  attr_detections = get_class_detections(image_ix, potentials_mat, platt_mod, attr_names)
-  return attr_detections
-
-
-def get_attribute_detections_hdf(image_ix, hf):
-  classes = hf['potentials']['classes']
+  classes = potentials_mat['classes'] if use_csv else potentials_mat['potentials_s'].classes
   attr_mask = np.array([name[:3] == 'atr' for name in classes])
-  return get_class_detections_hdf(image_ix, hf, classes[attr_mask])
+  attr_names = classes[attr_mask]
+  return get_class_detections(image_ix, potentials_mat, platt_mod, attr_names, use_csv=use_csv)
 
 
-def get_class_detections(image_ix, potential_data, platt_mod, object_names, verbose=False):
+
+
+def get_class_detections(image_ix, potential_data, platt_mod, object_names, verbose=False, use_csv=False):
   """Generate box & score values for an image and set of object names
   
   Args:
@@ -395,54 +385,6 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names, verb
     if verbose: print "%d: %s" % (det_ix, o)
     det_ix += 1
   return dict(zip(object_names, detections))
-
-
-def get_class_detections_hdf(image_ix, hf, object_names, verbose=False):
-  n_objects = object_names.shape[0]
-  detections = np.empty(n_objects, dtype=np.ndarray)
-
-  image_name = 'image_{}'.format(image_ix)
-  box_coords = np.copy(hf['potentials']['boxes'][image_name])
-  box_coords[:,2] -= box_coords[:,0]
-  box_coords[:,3] -= box_coords[:,1]
-
-  class_to_index = hf['potentials']['class_to_idx']
-  obj_id_dict = dict(zip(class_to_index['keys'], class_to_index['values']))
-
-  det_ix = 0
-  for o in object_names:
-    if o not in obj_id_dict:
-      continue
-
-    obj_ix = obj_id_dict[o]
-    obj_ix -= 1 # matlab is 1-based
-
-    a = 1.0
-    b = 1.0
-    platt_mod = hf['platt_mod']['s_models']
-    print('starting to generate platt dict')
-    platt_dict = dict(zip(platt_mod['keys'], platt_mod['values']))
-    print('done generating platt dict')
-    if o in platt_dict:
-      platt_coeff = platt_dict[o]
-      a = platt_coeff[0]
-      b = platt_coeff[1]
-
-    print('generating scores')
-    scores = hf['potentials']['scores'][image_name][:, obj_ix]
-    scores = 1.0 / (1.0 + np.exp(a * scores + b))
-    print('done')
-
-    n_detections = scores.shape[0]
-    scores = scores.reshape(n_detections, 1)
-
-    class_det = np.concatenate((box_coords, scores), axis=1)
-    detections[det_ix] = class_det
-    if verbose: print "%d: %s" % (det_ix, o)
-    det_ix += 1
-  print('returningggg')
-  return dict(zip(object_names, detections))
-
 
 
 def get_object_attributes(query):
