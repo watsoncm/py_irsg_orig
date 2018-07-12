@@ -109,8 +109,8 @@ def transfer_bin_mod(hf, bin_mod):
         mod_group.create_dataset('gmm_sigma', data=mod_data.gmm_sigma)
 
 
-def transfer_queries(hf, bin_mod):
-    pass
+def transfer_queries(hf, queries):
+    import pdb; pdb.set_trace()
 
 
 def convert_all_to_hdf():
@@ -121,7 +121,7 @@ def convert_all_to_hdf():
         # transfer_vgd(hf, vgd)
         # transfer_potentials(hf, potentials)
         # transfer_platt_mod(hf, platt_mod)
-        transfer_bin_mod(hf, bin_mod)
+        # transfer_bin_mod(hf, bin_mod)
         transfer_queries(hf, queries)
 
 
