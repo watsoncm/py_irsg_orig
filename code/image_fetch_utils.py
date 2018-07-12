@@ -317,7 +317,7 @@ def get_object_detections(image_ix, potentials_mat, platt_mod):
 def get_object_detections_hdf(image_ix, hf):
   classes = hf['potentials']['classes']
   object_mask = np.array([name[:3] == 'obj' for name in classes])
-  return get_class_detections(image_ix, hf, classes[object_mask])
+  return get_class_detections_hdf(image_ix, hf, classes[object_mask])
 
 
 def get_attribute_detections(image_ix, potentials_mat, platt_mod, csv_path=None):
@@ -339,7 +339,7 @@ def get_attribute_detections(image_ix, potentials_mat, platt_mod, csv_path=None)
 def get_attribute_detections_hdf(image_ix, hf):
   classes = hf['potentials']['classes']
   attr_mask = np.array([name[:3] == 'atr' for name in classes])
-  return get_class_detections(image_ix, hf, classes[attr_mask])
+  return get_class_detections_hdf(image_ix, hf, classes[attr_mask])
 
 
 def get_class_detections(image_ix, potential_data, platt_mod, object_names, verbose=False):
@@ -420,14 +420,18 @@ def get_class_detections_hdf(image_ix, hf, object_names, verbose=False):
     a = 1.0
     b = 1.0
     platt_mod = hf['platt_mod']['s_models']
-    platt_dict = dict(zip(platt_mod['keys'], platt_mod['vals']))
+    print('starting to generate platt dict')
+    platt_dict = dict(zip(platt_mod['keys'], platt_mod['values']))
+    print('done generating platt dict')
     if o in platt_dict:
       platt_coeff = platt_dict[o]
       a = platt_coeff[0]
       b = platt_coeff[1]
 
+    print('generating scores')
     scores = hf['potentials']['scores'][image_name][:, obj_ix]
     scores = 1.0 / (1.0 + np.exp(a * scores + b))
+    print('done')
 
     n_detections = scores.shape[0]
     scores = scores.reshape(n_detections, 1)
@@ -436,6 +440,7 @@ def get_class_detections_hdf(image_ix, hf, object_names, verbose=False):
     detections[det_ix] = class_det
     if verbose: print "%d: %s" % (det_ix, o)
     det_ix += 1
+  print('returningggg')
   return dict(zip(object_names, detections))
 
 
