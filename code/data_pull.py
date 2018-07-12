@@ -28,37 +28,28 @@ hf = None
 data_loaded = False
 
 
-def _load():
+def _load(lazy=True):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
   if not data_loaded:
-    vgd, potentials, platt_mod, bin_mod, queries = ifu.get_mat_data(mat_path)
-    ifdata = ifd.ImageFetchDataset(vgd['vg_data_test'], potentials, platt_mod, bin_mod, img_path)
+    data = ifu.get_mat_data(mat_path, get_potentials=(not lazy))
+    vgd, potentials, platt_mod, bin_mod, queries = data
+    if lazy:
+      ifdata = ifd.CSVImageFetchDataset(vgd['vg_data_test'], platt_mod, bin_mod, img_path, csv_path)
+    else:
+      ifdata = ifd.ImageFetchDataset(vgd['vg_data_test'], potentials, platt_mod, bin_mod, img_path)
   data_loaded = True
 
-def get_all_data():
+def get_all_data(lazy=True):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load()
+  _load(lazy=lazy)
   return vgd, potentials, platt_mod, bin_mod, queries, ifdata
 
-def get_ifdata():
+def get_ifdata(lazy=True):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load()
+  _load(lazy=lazy)
   return ifdata
 
-def get_supplemental_data():
+def get_supplemental_data(lazy=True):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load()
+  _load(lazy=lazy)
   return vgd, potentials, platt_mod, bin_mod, queries
-
-def get_hdf_data():
-    global data_loaded, ifdata, hf
-    if not data_loaded:
-        hf = h5py.File(hdf_path, 'r')
-        ifdata = ifd.HDFImageFetchDataset(hf, img_path)
-    return ifdata
-
-def close_hdf():
-    global hf
-    if hf is not None:
-        hf.close()
-        hf = None
