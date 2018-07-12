@@ -90,7 +90,7 @@ def transfer_platt_mod(hf, platt_mod):
     platt_data = platt_mod['platt_models'].s_models.serialization
     platt_group = hf.create_group('platt_mod')
 
-    # transfer sigmoid model data
+    # transfer unary platt model data
     s_group = platt_group.create_group('s_models')
     str_dtype = h5py.special_dtype(vlen=str)
     s_group.create_dataset('keys', data=platt_data.keys, dtype=str_dtype)
@@ -98,7 +98,15 @@ def transfer_platt_mod(hf, platt_mod):
 
 
 def transfer_bin_mod(hf, bin_mod):
-    pass
+    bin_mod_group = hf.create_group('bin_mod')
+    for mod_name in bin_mod.keys():
+        mod_group = bin_mod_group.create_group(mod_name)
+        mod_data = bin_mod[mod_name]
+        platt_data = np.array([mod_data.platt_a, mod_data.platt_b])
+        mod_group.create_dataset('platt_params', data=platt_data)
+        mod_group.create_dataset('gmm_weights', data=mod_data.gmm_weights)
+        mod_group.create_dataset('gmm_mu', data=mod_data.gmm_mu)
+        mod_group.create_dataset('gmm_sigma', data=mod_data.gmm_sigma)
 
 
 def transfer_queries(hf, bin_mod):
@@ -110,11 +118,11 @@ def convert_all_to_hdf():
     vgd, potentials, platt_mod, bin_mod, queries = dp.get_supplemental_data()
     path = os.path.join(data_path, 'all_data.h5')
     with h5py.File(path, 'w') as hf:
-        transfer_vgd(hf, vgd)
-        transfer_potentials(hf, potentials)
-        transfer_platt_mod(hf, platt_mod)
+        # transfer_vgd(hf, vgd)
+        # transfer_potentials(hf, potentials)
+        # transfer_platt_mod(hf, platt_mod)
         transfer_bin_mod(hf, bin_mod)
-        transfer_bin_mod(hf, queries)
+        transfer_queries(hf, queries)
 
 
 if __name__ == '__main__':
