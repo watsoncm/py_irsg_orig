@@ -1,0 +1,775 @@
+loading vg_data file...
+loading binary model data...
+loading platt model data...
+loading test queries...
+obj: woman
+obj: shirt
+obj: car
+obj: woman
+obj: hands
+obj: watch
+obj: shorts
+obj: sneakers
+obj: grass
+obj: tree
+obj: hair
+obj: shirt
+obj: window
+obj: building
+number of variables: 14
+  labels for var 0: 749
+  labels for var 1: 749
+  labels for var 2: 749
+  labels for var 3: 749
+  labels for var 4: 749
+  labels for var 5: 749
+  labels for var 6: 749
+  labels for var 7: 749
+  labels for var 8: 749
+  labels for var 9: 749
+  labels for var 10: 749
+  labels for var 11: 749
+  labels for var 12: 749
+  labels for var 13: 749
+unary functions - objects:
+  adding unary function for object 'woman' as full explicit function (qry_ix:0, pgm_ix:0)
+  adding unary function for object 'shirt' as full explicit function (qry_ix:1, pgm_ix:1)
+  adding unary function for object 'car' as full explicit function (qry_ix:2, pgm_ix:2)
+  adding unary function for object 'woman' as full explicit function (qry_ix:3, pgm_ix:3)
+  skipping frisbee, no detection available (qry_ix:4)
+  adding unary function for object 'hands' as full explicit function (qry_ix:5, pgm_ix:4)
+  adding unary function for object 'watch' as full explicit function (qry_ix:6, pgm_ix:5)
+  adding unary function for object 'shorts' as full explicit function (qry_ix:7, pgm_ix:6)
+  skipping streetlamp, no detection available (qry_ix:8)
+  adding unary function for object 'sneakers' as full explicit function (qry_ix:9, pgm_ix:7)
+  adding unary function for object 'grass' as full explicit function (qry_ix:10, pgm_ix:8)
+  skipping earring, no detection available (qry_ix:11)
+  skipping vehicle, no detection available (qry_ix:12)
+  adding unary function for object 'tree' as full explicit function (qry_ix:13, pgm_ix:9)
+  adding unary function for object 'hair' as full explicit function (qry_ix:14, pgm_ix:10)
+  skipping balloon, no detection available (qry_ix:15)
+  skipping balloon, no detection available (qry_ix:16)
+  skipping balloon, no detection available (qry_ix:17)
+  adding unary function for object 'shirt' as full explicit function (qry_ix:18, pgm_ix:11)
+  adding unary function for object 'window' as full explicit function (qry_ix:19, pgm_ix:12)
+  adding unary function for object 'building' as full explicit function (qry_ix:20, pgm_ix:13)
+unary functions - attributes:
+  adding unary function for attribute 'red' of object 'shirt' (qry_ix:1, pgm_ix:1)
+[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf]
+  adding unary function for attribute 'parked' of object 'car' (qry_ix:2, pgm_ix:2)
+[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf]
+  adding unary function for attribute 'grey' of object 'car' (qry_ix:2, pgm_ix:2)
+[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf]
+  adding unary function for attribute 'walking' of object 'woman' (qry_ix:3, pgm_ix:3)
+[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf]
+  skipping attribute 'pink' for object 'frisbee' (qry_ix:4), no object detection available
+  skipping attribute 'airborne' for object 'frisbee' (qry_ix:4), no attribute detection available
+  skipping attribute 'round' for object 'frisbee' (qry_ix:4), no object detection available
+  adding unary function for attribute 'blue' of object 'shorts' (qry_ix:7, pgm_ix:6)
+[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf]
+  skipping attribute 'black' for object 'streetlamp' (qry_ix:8), no object detection available
+  skipping attribute 'off' for object 'streetlamp' (qry_ix:8), no object detection available
+  adding unary function for attribute 'white' of object 'sneakers' (qry_ix:9, pgm_ix:7)
+[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf]
+  adding unary function for attribute 'green' of object 'grass' (qry_ix:10, pgm_ix:8)
+[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf]
+  skipping attribute 'black' for object 'vehicle' (qry_ix:12), no object detection available
+  skipping attribute 'parked' for object 'vehicle' (qry_ix:12), no object detection available
+  adding unary function for attribute 'blonde' of object 'hair' (qry_ix:14, pgm_ix:10)
+[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf]
+  skipping attribute 'yellow' for object 'balloon' (qry_ix:15), no object detection available
+  skipping attribute 'blue' for object 'balloon' (qry_ix:16), no object detection available
+  skipping attribute 'red' for object 'balloon' (qry_ix:17), no object detection available
+  adding unary function for attribute 'blue' of object 'shirt' (qry_ix:18, pgm_ix:11)
+[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf]
+  adding unary function for attribute 'transparent' of object 'window' (qry_ix:19, pgm_ix:12)
+[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf]
+  adding unary function for attribute 'blue' of object 'building' (qry_ix:20, pgm_ix:13)
+[inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf inf
+ inf inf inf inf inf inf inf inf inf inf inf]
+binary functions:
+    adding binary functions for relationship 'woman_wearing_shirt'
+[[ 4.64437036 12.04811498 19.68288402 ...  9.41512222 18.51587001
+  11.53591904]
+ [40.21775228  4.64437036 40.21775228 ... 40.21775228 40.21775228
+  40.21774999]
+ [40.21775228 40.21744209  4.64437036 ... 40.21775228 40.21775228
+  40.21775228]
+ ...
+ [40.21775228 40.21744602 40.21775228 ...  4.64437036 40.21775228
+  40.21732232]
+ [40.21775228 40.21775228 40.21775228 ... 40.21775228  4.64437036
+  40.21775228]
+ [40.21775228 10.81116769 40.21775228 ... 22.68779824 40.21775228
+   4.64437036]]
+  no model for 'woman_wearing_watch', generating generic relationship string
+    adding binary functions for relationship '*_wearing_*'
+[[ 0.78233044  6.34004977  7.24873192 ...  6.40268294  6.42619184
+   6.35389431]
+ [24.57708059  0.78233044 20.52088317 ... 11.61505317 24.57977319
+   7.17374127]
+ [16.28762732 24.09082356  0.78233044 ...  9.19228705 15.79321518
+  24.57044905]
+ ...
+ [ 8.71247527  7.67804683 13.20068315 ...  0.78233044 11.92212631
+   7.3997575 ]
+ [ 8.47622791 10.56479273 14.94838301 ...  8.45680029  0.78233044
+   9.94334254]
+ [ 8.89110959  6.07158009 11.92684129 ...  7.42609173 14.46258789
+   0.78233044]]
+    adding binary functions for relationship 'woman_wearing_shorts'
+[[19.00552362 34.81579001 34.81579001 ... 34.81579001 34.81579001
+  34.81579001]
+ [34.81579001 19.00552362 34.81579001 ... 34.81579001 34.81579001
+  34.81579001]
+ [34.81579001 34.81579001 19.00552362 ... 34.81579001 34.81579001
+  34.81579001]
+ ...
+ [34.81579001 34.81579001 34.81579001 ... 19.00552362 34.81579001
+  34.81579001]
+ [34.81579001 34.81579001 34.81579001 ... 34.81579001 19.00552362
+  34.81579001]
+ [34.81579001 28.07864906 34.81579001 ... 34.81579001 34.81579001
+  19.00552362]]
+  no model for 'woman_wearing_sneakers', generating generic relationship string
+    adding binary functions for relationship '*_wearing_*'
+[[ 0.78233044  6.34004977  7.24873192 ...  6.40268294  6.42619184
+   6.35389431]
+ [24.57708059  0.78233044 20.52088317 ... 11.61505317 24.57977319
+   7.17374127]
+ [16.28762732 24.09082356  0.78233044 ...  9.19228705 15.79321518
+  24.57044905]
+ ...
+ [ 8.71247527  7.67804683 13.20068315 ...  0.78233044 11.92212631
+   7.3997575 ]
+ [ 8.47622791 10.56479273 14.94838301 ...  8.45680029  0.78233044
+   9.94334254]
+ [ 8.89110959  6.07158009 11.92684129 ...  7.42609173 14.46258789
+   0.78233044]]
+  no model for 'woman_on_grass', generating generic relationship string
+    adding binary functions for relationship '*_on_*'
+[[0.43271944 0.79956259 0.88593729 ... 0.80354921 0.80678595 0.81706058]
+ [1.14490872 0.43271944 1.13717522 ... 1.10319683 1.58294201 0.66879038]
+ [1.19801057 1.44123747 0.43271944 ... 0.87117    1.13729833 1.52897175]
+ ...
+ [0.72876197 1.02351754 1.0992243  ... 0.43271944 1.05352415 1.01573805]
+ [0.83418488 1.14738493 1.15345881 ... 0.88564708 0.43271944 1.14396238]
+ [0.81612686 0.56699657 1.1278882  ... 1.04580471 1.16419854 0.43271944]]
+  no model for 'woman_wearing_earring', generating generic relationship string
+    no detections for object 'earring', skipping relationship (qry_ix:11)
+  no model for 'woman_standing_on_grass', generating generic relationship string
+    adding binary functions for relationship '*_standing_on_*'
+[[4.57159856 4.57159856 4.57159856 ... 4.57159856 4.57159856 4.57159856]
+ [4.57159856 4.57159856 4.57159856 ... 4.57159856 4.57159856 4.57159856]
+ [4.57159856 4.57159856 4.57159856 ... 4.57159856 4.57159856 4.57159856]
+ ...
+ [4.57159856 4.57159856 4.57159856 ... 4.57159856 4.57159856 4.57159856]
+ [4.57159856 4.57159856 4.57159856 ... 4.57159856 4.57159856 4.57159856]
+ [4.57159856 4.57159856 4.57159856 ... 4.57159856 4.57159856 4.57159856]]
+    adding binary functions for relationship 'woman_has_hair'
+[[4.24465873 4.24465873 4.24465873 ... 4.24465873 4.24465873 4.24465873]
+ [4.24465873 4.24465873 4.24465873 ... 4.24465873 4.24465873 4.24465873]
+ [4.24465873 4.24465873 4.24465873 ... 4.24465873 4.24465873 4.24465873]
+ ...
+ [4.24465873 4.24465873 4.24465873 ... 4.24465873 4.24465873 4.24465873]
+ [4.24465873 4.24465873 4.24465873 ... 4.24465873 4.24465873 4.24465873]
+ [4.24465873 4.24465873 4.24465873 ... 4.24465873 4.24465873 4.24465873]]
+  no model for 'woman_in_front_of_woman', generating generic relationship string
+    adding binary functions for relationship '*_in_front_of_*'
+[[1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]
+ [1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]
+ [1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]
+ ...
+ [1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]
+ [1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]
+ [1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]]
+  no model for 'woman_in_front_of_tree', generating generic relationship string
+    adding binary functions for relationship '*_in_front_of_*'
+[[1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]
+ [1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]
+ [1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]
+ ...
+ [1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]
+ [1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]
+ [1.76161668 1.76161668 1.76161668 ... 1.76161668 1.76161668 1.76161668]]
+  no model for 'woman_next_to_car', generating generic relationship string
+    adding binary functions for relationship '*_next_to_*'
+[[0.89288836 2.82777591 2.59674381 ... 1.76711182 1.6116308  2.04040125]
+ [1.55308436 0.89288836 2.70662867 ... 1.93522448 2.5025283  1.21728268]
+ [1.76049839 2.59811399 0.89288836 ... 2.36599172 2.70504421 2.22018222]
+ ...
+ [1.21383249 2.62348683 1.84004053 ... 0.89288836 1.91137519 1.84147407]
+ [1.24319731 3.56667001 2.69934324 ... 2.51816409 0.89288836 2.81083068]
+ [1.42209232 1.62065089 2.72489882 ... 1.79412124 2.36306317 0.89288836]]
+    adding binary functions for relationship 'woman_wearing_shirt'
+[[ 4.64437036 12.04811498 19.68288402 ...  9.41512222 18.51587001
+  11.53591904]
+ [40.21775228  4.64437036 40.21775228 ... 40.21775228 40.21775228
+  40.21774999]
+ [40.21775228 40.21744209  4.64437036 ... 40.21775228 40.21775228
+  40.21775228]
+ ...
+ [40.21775228 40.21744602 40.21775228 ...  4.64437036 40.21775228
+  40.21732232]
+ [40.21775228 40.21775228 40.21775228 ... 40.21775228  4.64437036
+  40.21775228]
+ [40.21775228 10.81116769 40.21775228 ... 22.68779824 40.21775228
+   4.64437036]]
+  no model for 'frisbee_between_hands', generating generic relationship string
+    no detections for object 'frisbee', skipping relationship (qry_ix:4)
+  no model for 'frisbee_above_grass', generating generic relationship string
+    no detections for object 'frisbee', skipping relationship (qry_ix:4)
+  no model for 'frisbee_above_sneakers', generating generic relationship string
+    no detections for object 'frisbee', skipping relationship (qry_ix:4)
+  no model for 'streetlamp_next_to_car', generating generic relationship string
+    no detections for object 'streetlamp', skipping relationship (qry_ix:8)
+  no model for 'streetlamp_in_front_of_building', generating generic relationship string
+    no detections for object 'streetlamp', skipping relationship (qry_ix:8)
+  no model for 'vehicle_behind_tree', generating generic relationship string
+    no detections for object 'vehicle', skipping relationship (qry_ix:12)
+  no model for 'vehicle_behind_woman', generating generic relationship string
+    no detections for object 'vehicle', skipping relationship (qry_ix:12)
+  no model for 'tree_in_front_of_vehicle', generating generic relationship string
+    no detections for object 'vehicle', skipping relationship (qry_ix:12)
+  no model for 'tree_behind_woman', generating generic relationship string
+    adding binary functions for relationship '*_behind_*'
+[[0.97396291 2.14863893 2.14967585 ... 1.4982763  1.63428085 1.60954867]
+ [1.52520017 0.97396291 2.43063052 ... 1.88701649 2.13610802 1.32213762]
+ [1.67078172 2.14279571 0.97396291 ... 2.09588762 2.1614489  2.11701934]
+ ...
+ [1.51733559 2.05223752 1.65975032 ... 0.97396291 1.73465879 1.84222135]
+ [1.50057059 2.79156572 2.13200912 ... 1.93096082 0.97396291 2.1928118 ]
+ [1.5379865  1.3705727  2.51024567 ... 1.82886481 2.12161963 0.97396291]]
+  no model for 'balloon_in_front_of_balloon', generating generic relationship string
+    no detections for object 'balloon', skipping relationship (qry_ix:15)
+  no model for 'balloon_in_front_of_building', generating generic relationship string
+    no detections for object 'balloon', skipping relationship (qry_ix:15)
+  no model for 'balloon_in_front_of_balloon', generating generic relationship string
+    no detections for object 'balloon', skipping relationship (qry_ix:16)
+  adding unary factor: unary function for object 'woman'
+    fid: 0   var: 0
+  adding unary factor: unary function for object 'shirt'
+    fid: 1   var: 1
+  adding unary factor: unary function for object 'car'
+    fid: 2   var: 2
+  adding unary factor: unary function for object 'woman'
+    fid: 3   var: 3
+  adding unary factor: unary function for object 'hands'
+    fid: 4   var: 4
+  adding unary factor: unary function for object 'watch'
+    fid: 5   var: 5
+  adding unary factor: unary function for object 'shorts'
+    fid: 6   var: 6
+  adding unary factor: unary function for object 'sneakers'
+    fid: 7   var: 7
+  adding unary factor: unary function for object 'grass'
+    fid: 8   var: 8
+  adding unary factor: unary function for object 'tree'
+    fid: 9   var: 9
+  adding unary factor: unary function for object 'hair'
+    fid: 10   var: 10
+  adding unary factor: unary function for object 'shirt'
+    fid: 11   var: 11
+  adding unary factor: unary function for object 'window'
+    fid: 12   var: 12
+  adding unary factor: unary function for object 'building'
+    fid: 13   var: 13
+  adding unary factor: unary function for attribute 'red' of object 'shirt' (qry_ix:1, pgm_ix:1)
+    fid: 14   var: 1
+  adding unary factor: unary function for attribute 'parked' of object 'car' (qry_ix:2, pgm_ix:2)
+    fid: 15   var: 2
+  adding unary factor: unary function for attribute 'grey' of object 'car' (qry_ix:2, pgm_ix:2)
+    fid: 16   var: 2
+  adding unary factor: unary function for attribute 'walking' of object 'woman' (qry_ix:3, pgm_ix:3)
+    fid: 17   var: 3
+  adding unary factor: unary function for attribute 'blue' of object 'shorts' (qry_ix:7, pgm_ix:6)
+    fid: 18   var: 6
+  adding unary factor: unary function for attribute 'white' of object 'sneakers' (qry_ix:9, pgm_ix:7)
+    fid: 19   var: 7
+  adding unary factor: unary function for attribute 'green' of object 'grass' (qry_ix:10, pgm_ix:8)
+    fid: 20   var: 8
+  adding unary factor: unary function for attribute 'blonde' of object 'hair' (qry_ix:14, pgm_ix:10)
+    fid: 21   var: 10
+  adding unary factor: unary function for attribute 'blue' of object 'shirt' (qry_ix:18, pgm_ix:11)
+    fid: 22   var: 11
+  adding unary factor: unary function for attribute 'transparent' of object 'window' (qry_ix:19, pgm_ix:12)
+    fid: 23   var: 12
+  adding unary factor: unary function for attribute 'blue' of object 'building' (qry_ix:20, pgm_ix:13)
+    fid: 24   var: 13
+  adding binary factor: binary functions for relationship 'woman_wearing_shirt'
+    fid: 25   var: [0, 1]
+  adding binary factor: binary functions for relationship '*_wearing_*'
+    fid: 26   var: [0, 5]
+  adding binary factor: binary functions for relationship 'woman_wearing_shorts'
+    fid: 27   var: [0, 6]
+  adding binary factor: binary functions for relationship '*_wearing_*'
+    fid: 28   var: [0, 7]
+  adding binary factor: binary functions for relationship '*_on_*'
+    fid: 29   var: [0, 8]
+  adding binary factor: binary functions for relationship '*_standing_on_*'
+    fid: 30   var: [0, 8]
+  adding binary factor: binary functions for relationship 'woman_has_hair'
+    fid: 31   var: [0, 10]
+  adding binary factor: binary functions for relationship '*_in_front_of_*'
+    fid: 32   var: [0, 3]
+  adding binary factor: binary functions for relationship '*_in_front_of_*'
+    fid: 33   var: [0, 9]
+  adding binary factor: binary functions for relationship '*_next_to_*'
+    fid: 34   var: [2, 3]
+  adding binary factor: binary functions for relationship 'woman_wearing_shirt'
+    fid: 35   var: [3, 11]
+  adding binary factor: binary functions for relationship '*_behind_*'
+    fid: 36   var: [0, 9]
+> /home/watsonc/py_irsg_orig/code/image_fetch_plot.py(224)draw_all_heatmaps()
+-> for obj_ix in range(0, len(tracker.object_names)):
+(Pdb) 

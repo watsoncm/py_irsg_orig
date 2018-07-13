@@ -38,7 +38,6 @@ def ex1(query_index, image_index, inf_alg='bp', gm_method='original', do_suppl_p
   
   query = vgd['vg_data_test'][query_index].annotations
   ifdata.configure(image_index, query)
-  import pdb; pdb.set_trace()
   
   gm = None
   tracker = None

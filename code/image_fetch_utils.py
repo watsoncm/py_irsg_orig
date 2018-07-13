@@ -388,7 +388,7 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names, verb
     
     n_detections = scores.shape[0]
     scores = scores.reshape(n_detections, 1)
-    
+
     class_det = np.concatenate((box_coords, scores), axis=1)
     detections[det_ix] = class_det
     if verbose: print "%d: %s" % (det_ix, o)

@@ -76,13 +76,13 @@ class CSVImageFetchDataset(ImageFetchDataset):
 
     def load_relevant_data(self, test_image_num, sg_query):
         if sg_query is not None:
+            import pdb; pdb.set_trace()
             for obj in sg_query.objects:
                 name = np.array(obj.names).reshape(-1)[0]
                 if 'obj:{}'.format(name) in self.potentials_data['classes']:
                     print('obj: {}'.format(name))
                     self.load_data(name, True, test_image_num)
-            for attr in sg_query.unary_triples:
-                name = np.array(obj.names).reshape(-1)[0]
+            for _, name in ifu.get_object_attributes(sg_query):
                 if 'atr:{}'.format(name) in self.potentials_data['classes']:
                     print('attr: {}'.format(name))
                     self.load_data(name, False, test_image_num)

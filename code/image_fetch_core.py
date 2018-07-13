@@ -236,7 +236,7 @@ def generate_pgm(if_data, verbose=False):
     
     detections = attribute_detections[prefix_attribute_name]
     log_scores = -np.log(detections[:,4])
-    
+
     detail = "unary function for attribute '{0}' of object '{1}' (qry_ix:{2}, pgm_ix:{3})".format(attribute_name, query_graph.objects[obj_ix].names, obj_ix, pgm_ix)
     if verbose: print "  adding {0}".format(detail)
     
@@ -655,7 +655,7 @@ def generate_pgm_all_objects(if_data, method='uniform', verbose=False):
     log_likelihoods = -np.log(sig_scores)
     
     tracker.add_group(bin_trip_key, log_likelihoods, bin_object_box, object_name, bin_subject_box, subject_name)
-    
+
     # generate the matrix of functions
     n_subject_val = len(bin_subject_box)
     n_object_val = len(bin_object_box)
@@ -713,7 +713,7 @@ def do_inference(gm, n_steps=120, damping=0., convergence_bound=0.001, verbose=F
   for i in range(0, gm.numberOfVariables):
     if gm.numberOfLabels(i) > 1:
       detected_vars.append(i)
-  
+
   infr_marginals = infr_output.marginals(detected_vars)
   infr_marginals = np.exp(-infr_marginals)
   
