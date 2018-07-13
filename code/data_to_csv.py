@@ -67,10 +67,10 @@ def generate_image_csvs(ifdata, root_path):
     value_arrays = []
     dtype = [('name', 'U24'),
              ('box_idx', 'i4'),
-             ('b0', 'f4'),
-             ('b1', 'f4'),
-             ('b2', 'f4'),
-             ('b3', 'f4'),
+             ('x0', 'f4'),
+             ('y0', 'f4'),
+             ('x1', 'f4'),
+             ('y1', 'f4'),
              ('score', 'U10')]
 
 
@@ -87,8 +87,8 @@ def generate_image_csvs(ifdata, root_path):
                     output_array = np.empty(values.shape[0], dtype=dtype)
                     output_array['name'] = np.full(values.shape[0], name, dtype='U25')
                     output_array['box_idx'] = np.arange(values.shape[0])
-                    for i in range(4):
-                        output_array['b' + str(i)] = values[:, i]
+                    for i, name in enumerate(('x0', 'y0', 'x1', 'y1')):
+                        output_array[name] = values[:, i]
                     output_array['score'] = np.around(values[:, 4], decimals=6)
                     writer.writerows(output_array)
 

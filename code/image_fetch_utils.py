@@ -348,15 +348,19 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names, verb
   n_objects = object_names.shape[0]
   detections = np.empty(n_objects, dtype=np.ndarray)
   
-  box_coords = np.copy(potential_data['potentials_s'].boxes[image_ix])
-  box_coords[:,2] -= box_coords[:,0]
-  box_coords[:,3] -= box_coords[:,1]
+  if use_csv:
+    box_coords = np.copy(potential_data['boxes'][image_ix])
+  else:
+    box_coords = np.copy(potential_data['potentials_s'].boxes[image_ix])
+    box_coords[:,2] -= box_coords[:,0]
+    box_coords[:,3] -= box_coords[:,1]
   
-  import pdb; pdb.set_trace()
-
-  class_to_index_keys = potential_data['potentials_s'].class_to_idx.serialization.keys
-  class_to_index_vals = potential_data['potentials_s'].class_to_idx.serialization.values
-  obj_id_dict = dict(zip(class_to_index_keys, class_to_index_vals))
+  if use_csv:
+    obj_id_dict = potential_data['class_to_idx']
+  else:
+    class_to_index_keys = potential_data['potentials_s'].class_to_idx.serialization.keys
+    class_to_index_vals = potential_data['potentials_s'].class_to_idx.serialization.values
+    obj_id_dict = dict(zip(class_to_index_keys, class_to_index_vals))
   
   det_ix = 0
   for o in object_names:
@@ -376,8 +380,11 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names, verb
       a = platt_coeff[0]
       b = platt_coeff[1]
     
-    scores = potential_data['potentials_s'].scores[image_ix][:,obj_ix]
-    scores = 1.0 / (1.0 + np.exp(a * scores + b))
+    if use_csv:
+      scores = potential_data['scores'][image_ix][:, obj_ix]
+    else:
+      scores = potential_data['potentials_s'].scores[image_ix][:, obj_ix]
+      scores = 1.0 / (1.0 + np.exp(a * scores + b))
     
     n_detections = scores.shape[0]
     scores = scores.reshape(n_detections, 1)

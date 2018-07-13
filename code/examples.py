@@ -28,16 +28,17 @@ energy, best_match_ix, marginals = ifc.do_inference(gm)
 print("done")
 """
 
-def ex1(query_index, image_index, inf_alg='bp', gm_method='original', do_suppl_plots=True, save_gm=False, verbose=True):
+def ex1(query_index, image_index, inf_alg='bp', gm_method='original', do_suppl_plots=True, save_gm=False, verbose=True, use_csv=False):
   """ generate plots for a query/image pair
   """
   import image_fetch_core as ifc; reload(ifc)
   import image_fetch_plot as ifp; reload(ifp)
   
-  vgd, potentials, platt_mod, bin_mod, queries, ifdata = dp.get_all_data()
+  vgd, potentials, platt_mod, bin_mod, queries, ifdata = dp.get_all_data(use_csv=use_csv)
   
   query = vgd['vg_data_test'][query_index].annotations
   ifdata.configure(image_index, query)
+  import pdb; pdb.set_trace()
   
   gm = None
   tracker = None

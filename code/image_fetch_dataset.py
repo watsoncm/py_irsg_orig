@@ -70,7 +70,7 @@ class CSVImageFetchDataset(ImageFetchDataset):
             scores_shape = (data_array.shape[0], self.n_objs + self.n_attrs)
             self.potentials_data['scores'][test_image_num] = np.zeros(scores_shape)
         full_name = ('obj:' if is_obj else 'atr:') + name
-        score_idx = self.potentials_data['class_to_idx'][full_name]
+        score_idx = self.potentials_data['class_to_idx'][full_name] - 1  # zero-index
         self.potentials_data['scores'][test_image_num][:, score_idx] = data_array[:, 4]
 
 
