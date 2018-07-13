@@ -56,21 +56,36 @@ class CSVImageFetchDataset(ImageFetchDataset):
         self.potentials_data['boxes'] = np.array([None for _ in range(self.n_images)])
         self.potentials_data['scores'] = np.array([None for _ in range(self.n_images)])
 
-    def load_data(name, is_obj, test_image_num):
-        csv_name = 'irsg_{}'.format(test_image_num)
+    def load_data(self, name, is_obj, test_image_num):
+        csv_name = 'irsg_{}.csv'.format(test_image_num)
         dir_name = 'obj_files' if is_obj else 'attr_files'
         csv_file_path = os.path.join(self.csv_path, dir_name, name, csv_name)
-        data_array = np.fromtxt(csv_file_path, delimiter=',')
+
+        # load relevant data and assign boxes
+        data_array = np.loadtxt(csv_file_path, delimiter=',')
         self.potentials_data['boxes'][test_image_num] = data_array[:, :4]
-        self.potentials_data['scores'][test_image_num][data_array] = data_array[:, 4]
+
+        # create score array if necessary
+        if self.potentials_data['scores'][test_image_num] is None:
+            scores_shape = (data_array.shape[0], self.n_objs + self.n_attrs)
+            self.potentials_data['scores'][test_image_num] = np.zeros(scores_shape)
+        full_name = ('obj:' if is_obj else 'atr:') + name
+        score_idx = self.potentials_data['class_to_idx'][full_name]
+        self.potentials_data['scores'][test_image_num][:, score_idx] = data_array[:, 4]
 
 
     def load_relevant_data(self, test_image_num, sg_query):
         if sg_query is not None:
             for obj in sg_query.objects:
-                self.load_data(obj, True, test_image_num)
+                name = np.array(obj.names).reshape(-1)[0]
+                if 'obj:{}'.format(name) in self.potentials_data['classes']:
+                    print('obj: {}'.format(name))
+                    self.load_data(name, True, test_image_num)
             for attr in sg_query.unary_triples:
-                self.load_data(attr, False, test_image_num)
+                name = np.array(obj.names).reshape(-1)[0]
+                if 'atr:{}'.format(name) in self.potentials_data['classes']:
+                    print('attr: {}'.format(name))
+                    self.load_data(name, False, test_image_num)
 
     def configure(self, test_image_num, sg_query):
         if test_image_num != self.current_image_num:

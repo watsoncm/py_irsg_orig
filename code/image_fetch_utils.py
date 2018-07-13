@@ -352,6 +352,8 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names, verb
   box_coords[:,2] -= box_coords[:,0]
   box_coords[:,3] -= box_coords[:,1]
   
+  import pdb; pdb.set_trace()
+
   class_to_index_keys = potential_data['potentials_s'].class_to_idx.serialization.keys
   class_to_index_vals = potential_data['potentials_s'].class_to_idx.serialization.values
   obj_id_dict = dict(zip(class_to_index_keys, class_to_index_vals))
