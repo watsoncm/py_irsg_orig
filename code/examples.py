@@ -151,7 +151,7 @@ def ex5(query_index_list, image_index_list = [], gm_method='original', obscure_o
   if not os.path.exists(batch_path):
     os.makedirs(batch_path)
   for query_index in query_index_list:
-    query = queries['simple_graphs'][query_index].annotations
+    query = qvg_data_testueries['simple_graphs'][query_index].annotations
     if obscure_object:
       query = ifu.obscure(query)
     ifw.image_batch(query, query_index, ifdata, batch_path, image_index_list, gm_method=gm_method, gen_plots=False)

@@ -366,7 +366,7 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names, verb
   for o in object_names:
     if o not in obj_id_dict:
       continue
-    
+
     obj_ix = obj_id_dict[o]
     obj_ix -= 1 # matlab is 1-based
     

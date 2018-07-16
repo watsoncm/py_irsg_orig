@@ -55,6 +55,7 @@ class CSVImageFetchDataset(ImageFetchDataset):
         self.n_attrs = len(os.listdir(os.path.join(csv_path, 'attr_files')))
         self.potentials_data['boxes'] = np.array([None for _ in range(self.n_images)])
         self.potentials_data['scores'] = np.array([None for _ in range(self.n_images)])
+        self.loaded_cache = []
 
     def load_data(self, name, is_obj, test_image_num):
         csv_name = 'irsg_{}.csv'.format(test_image_num)
@@ -76,16 +77,17 @@ class CSVImageFetchDataset(ImageFetchDataset):
 
     def load_relevant_data(self, test_image_num, sg_query):
         if sg_query is not None:
-            import pdb; pdb.set_trace()
             for obj in sg_query.objects:
                 name = np.array(obj.names).reshape(-1)[0]
-                if 'obj:{}'.format(name) in self.potentials_data['classes']:
-                    print('obj: {}'.format(name))
-                    self.load_data(name, True, test_image_num)
+                if (name, test_image_num) not in self.loaded_cache:
+                    if 'obj:{}'.format(name) in self.potentials_data['classes']:
+                        self.load_data(name, True, test_image_num)
+                        self.loaded_cache.append((name, test_image_num))
             for _, name in ifu.get_object_attributes(sg_query):
-                if 'atr:{}'.format(name) in self.potentials_data['classes']:
-                    print('attr: {}'.format(name))
-                    self.load_data(name, False, test_image_num)
+                if (name, test_image_num) not in self.loaded_cache:
+                    if 'atr:{}'.format(name) in self.potentials_data['classes']:
+                        self.load_data(name, False, test_image_num)
+                        self.loaded_cache.append((name, test_image_num))
 
     def configure(self, test_image_num, sg_query):
         if test_image_num != self.current_image_num:
