@@ -36,6 +36,8 @@ def ex1(query_index, image_index, inf_alg='bp', gm_method='original', do_suppl_p
   
   vgd, potentials, platt_mod, bin_mod, queries, ifdata = dp.get_all_data(use_csv=use_csv)
   
+  import pdb; pdb.set_trace()
+
   query = vgd['vg_data_test'][query_index].annotations
   ifdata.configure(image_index, query)
   

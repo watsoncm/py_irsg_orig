@@ -93,6 +93,15 @@ def generate_image_csvs(ifdata, root_path):
                     writer.writerows(output_array)
 
 
+def transfer_image_names(ifdata, csv_path):
+    with open(csv_path, 'wb') as f:
+        csv_writer = csv.writer(f)
+        csv_writer.writerow(('image_index', 'filename'))
+        for image_index, image in enumerate(ifdata.vg_data):
+            ifdata.configure(image_index, None)
+            csv_writer.writerow((image_index, ifdata.image_filename))
+
+
 def convert_all_to_csv(by_image=False):
     """Converts all Matlab files into corresponding CSV files."""
     ifdata = dp.get_ifdata()
@@ -106,15 +115,18 @@ def convert_all_to_csv(by_image=False):
         attr_path = os.path.join(csv_path, 'attr_files')
         class_to_idx_path = os.path.join(csv_path, 'class_to_idx.csv')
         class_path = os.path.join(csv_path, 'classes.csv')
+        image_path = os.path.join(csv_path, 'image_paths.csv')
 
         for path in (obj_path, attr_path):
             if not os.path.exists(path):
                 os.mkdir(path)
 
-        transfer_scores(ifdata, obj_path)
-        transfer_scores(ifdata, attr_path, is_attr=True)
-        transfer_class_to_idx(ifdata, class_to_idx_path)
-        transfer_classes(ifdata, class_path)
+        # transfer_scores(ifdata, obj_path)
+        # transfer_scores(ifdata, attr_path, is_attr=True)
+        # transfer_class_to_idx(ifdata, class_to_idx_path)
+        # transfer_classes(ifdata, class_path)
+        print(image_path)
+        transfer_image_names(ifdata, image_path)
 
 
 if __name__ == '__main__':

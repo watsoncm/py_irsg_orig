@@ -1,7 +1,5 @@
 import json
 
-import h5py
-
 import image_fetch_utils as ifu
 import image_fetch_dataset as ifd
 
