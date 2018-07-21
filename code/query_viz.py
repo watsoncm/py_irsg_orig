@@ -52,6 +52,8 @@ class ImageQueryData(object):
         image_obj_mat_bbox = image_objects[self.image_obj_id].bbox
         self.image_sub_bbox = self.make_bbox(image_sub_mat_bbox)
         self.image_obj_bbox = self.make_bbox(image_obj_mat_bbox)
+        self.image_scores = self.if_data.potentials_data['scores'][self.image_id]
+        self.class_to_idx = self.if_data.potentials_data['class_to_idx']
         self.initialized_ = False
 
     @staticmethod
@@ -149,22 +151,117 @@ class ImageQueryData(object):
                     for box in self.boxes]
         sub_idx = np.argmax(sub_ious)
         obj_idx = np.argmax(obj_ious)
-        return (sub_idx, obj_idx, sub_ious[sub_idx], sub_ious[obj_idx])
+        return (sub_idx, obj_idx, sub_ious[sub_idx], obj_ious[obj_idx])
 
     def get_model_boxes(self):
         gm, tracker = ifc.generate_pgm(self.if_data, verbose=False)
         _, best_matches, _ = ifc.do_inference(gm)
         return best_matches[0], best_matches[1]
 
+    def get_obj_scores(self):
+        sub_pot_id = self.class_to_idx['obj:' + self.query_sub] - 1
+        obj_pot_id = self.class_to_idx['obj:' + self.query_obj] - 1
+        model_sub_pot = self.image_scores[self.model_sub_bbox_id, sub_pot_id]
+        model_obj_pot = self.image_scores[self.model_obj_bbox_id, obj_pot_id]
+        gt_sub_pot = self.image_scores[self.close_sub_bbox_id, sub_pot_id]
+        gt_obj_pot = self.image_scores[self.close_obj_bbox_id, obj_pot_id]
+        return model_sub_pot, model_obj_pot, gt_sub_pot, gt_obj_pot
+
+    def get_attr_scores(self):
+        sub_attr_pot_ids = [self.class_to_idx['atr:' + attr] - 1
+                            for attr in self.query_sub_attrs]
+        obj_attr_pot_ids = [self.class_to_idx['atr:' + attr] - 1
+                            for attr in self.query_obj_attrs]
+        model_sub_attr_pots = []
+        model_obj_attr_pots = []
+        gt_sub_attr_pots = []
+        gt_obj_attr_pots = []
+
+        for pot_id in sub_attr_pot_ids:
+            model_pot = self.image_scores[self.model_sub_bbox_id, pot_id]
+            model_sub_attr_pots.append(model_pot)
+            gt_pot = self.image_scores[self.close_sub_bbox_id, pot_id]
+            gt_sub_attr_pots.append(gt_pot)
+        for pot_id in obj_attr_pot_ids:
+            model_pot = self.image_scores[self.model_obj_bbox_id, pot_id]
+            model_obj_attr_pots.append(model_pot)
+            gt_pot = self.image_scores[self.close_obj_bbox_id, pot_id]
+            gt_obj_attr_pots.append(gt_pot)
+        return (model_sub_attr_pots, model_obj_attr_pots,
+                gt_sub_attr_pots, gt_obj_attr_pots)
+
+    def get_pred_model(self):
+        pred_models = self.if_data.relationship_models
+        clean_pred = self.query_pred.replace(' ', '_')
+        bin_trip_key = '{}_{}_{}'.format(self.query_sub, clean_pred,
+                                         self.query_obj)
+        if bin_trip_key not in pred_models:
+            bin_trip_key = '*_{}_*'.format(clean_pred)
+        try:
+            return pred_models[bin_trip_key], bin_trip_key
+        except KeyError:
+            return None, None
+
+    def score_box_pair(self, subject_box, object_box):
+        sub_center = (subject_box[0] + 0.5 * subject_box[2],
+                      subject_box[1] + 0.5 * subject_box[3])
+        obj_center = (object_box[0] + 0.5 * object_box[2],
+                      object_box[1] + 0.5 * object_box[3])
+        rel_center = ((sub_center[0] - obj_center[0]) / subject_box[2],
+                      (sub_center[1] - obj_center[1]) / subject_box[3])
+        rel_dims = (object_box[2] / subject_box[2],
+                    object_box[3] / subject_box[3])
+        features = np.vstack((rel_center[0], rel_center[1],
+                              rel_dims[1], rel_dims[0])).T
+
+        scores = ifc.gmm_pdf(features, self.pred_model.gmm_weights,
+                             self.pred_model.gmm_mu, self.pred_model.gmm_sigma)
+        eps = np.finfo(np.float).eps
+        scores = np.log(eps + scores)
+        sig_scores = 1.0 / (1.0 + np.exp(self.pred_model.platt_a * scores +
+                                         self.pred_model.platt_b))
+        return scores[0], sig_scores[0]
+
+    def get_pred_scores(self):
+        model_sub_bbox = self.boxes[self.model_sub_bbox_id]
+        model_obj_bbox = self.boxes[self.model_obj_bbox_id]
+        close_sub_bbox = self.boxes[self.close_sub_bbox_id]
+        close_obj_bbox = self.boxes[self.close_obj_bbox_id]
+        model_pred_score = self.score_box_pair(model_sub_bbox, model_obj_bbox)
+        close_pred_score = self.score_box_pair(close_sub_bbox, close_obj_bbox)
+        return model_pred_score, close_pred_score
+
+    def get_heatmaps(self):
+        return None, None  # TODO: implement
+
     def compute_plot_data(self):
         (self.close_sub_bbox_id, self.close_obj_bbox_id,
          self.sub_iou, self.obj_iou) = self.get_gt_closest()
         self.model_sub_bbox_id, self.model_obj_bbox_id = self.get_model_boxes()
+        (self.model_sub_pot, self.model_obj_pot,
+         self.gt_sub_pot, self.gt_obj_pot) = self.get_obj_scores()
+        (self.model_sub_attr_pots, self.model_obj_attr_pots,
+         self.gt_sub_attr_pots, self.gt_sub_attr_pots) = self.get_attr_scores()
+        self.pred_model, self.pred_model_name = self.get_pred_model()
+        if self.pred_model is None:
+            raise ValueError('no relevant relationship model exists')
+        self.model_pred_score, self.gt_pred_score = self.get_pred_scores()
+        self.model_heatmap, self.gt_heatmap = self.get_heatmaps()
         self.initialized_ = True
 
-    def generate_plot(self, output_path=None):
+    def generate_plot(self, save_path=None):
         if not self.initialized_:
             raise NotInitializedException('ImageQueryData not initialized')
+
+        fig, ax = plt.subplots(1, 2)
+        plt.xticks([])
+        plt.yticks([])
+
+        # plt.title()
+        if save_path is None:
+            plt.show()
+        else:
+            plt.savefig(save_path, dpi=175)
 
 
 if __name__ == '__main__':
@@ -177,3 +274,5 @@ if __name__ == '__main__':
 
     import pdb
     pdb.set_trace()
+
+    iqd.generate_plot()
