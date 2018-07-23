@@ -320,7 +320,7 @@ def generate_pgm(if_data, verbose=False):
     if not object_is_detected[obj_ix]:
       if verbose: print "    no detections for object '{0}', skipping relationship (qry_ix:{1})".format(object_name, obj_ix)
       continue
-    
+
     # get model parameters
     prefix_object_name = "obj:" + object_name
     bin_object_box = object_detections[prefix_object_name]
