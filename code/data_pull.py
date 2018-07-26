@@ -23,31 +23,35 @@ queries = None
 ifdata = None
 hf = None
 
-data_loaded = False
+data_loaded = {'test': False,
+               'train': False}
 
 
-def _load(use_csv=False):
+def _load(use_csv=False, use_train=False):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  if not data_loaded:
+  dataset, other = ('train', 'test') if use_train else ('test', 'train')
+  if not data_loaded[dataset]:
     data = ifu.get_mat_data(mat_path, get_potentials=(not use_csv))
     vgd, potentials, platt_mod, bin_mod, queries = data
+    vg_string = 'vg_data_train' if use_train else 'vg_data_test'
     if use_csv:
-      ifdata = ifd.CSVImageFetchDataset(vgd['vg_data_test'], platt_mod, bin_mod, img_path, csv_path)
+      ifdata = ifd.CSVImageFetchDataset(vgd[vg_string], platt_mod, bin_mod, img_path, csv_path)
     else:
-      ifdata = ifd.ImageFetchDataset(vgd['vg_data_test'], potentials, platt_mod, bin_mod, img_path)
-  data_loaded = True
+      ifdata = ifd.ImageFetchDataset(vgd[vg_string], potentials, platt_mod, bin_mod, img_path)
+  data_loaded[dataset] = True
+  data_loaded[other] = False
 
-def get_all_data(use_csv=False):
+def get_all_data(use_csv=False, use_train=False):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load(use_csv=use_csv)
+  _load(use_csv=use_csv, use_train=use_train)
   return vgd, potentials, platt_mod, bin_mod, queries, ifdata
 
-def get_ifdata(use_csv=False):
+def get_ifdata(use_csv=False, use_train=False):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load(use_csv=use_csv)
+  _load(use_csv=use_csv, use_train=use_train)
   return ifdata
 
-def get_supplemental_data(use_csv=False):
+def get_supplemental_data(use_csv=False, use_train=False):
   global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load(use_csv=use_csv)
+  _load(use_csv=use_csv, use_train=use_train)
   return vgd, potentials, platt_mod, bin_mod, queries
