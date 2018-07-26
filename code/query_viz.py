@@ -297,20 +297,9 @@ class ImageQueryData(object):
 
         covar_data = (gmm.covariances_, gmm.covariance_type)
         gmm.precisions_cholesky_ = _compute_precision_cholesky(*covar_data)
-
-        gmm2 = mixture.GaussianMixture(pred_model.gmm_weights.size)
-        gmm2.means_ = pred_model.gmm_mu
-        gmm2.covariances_ = pred_model.gmm_sigma
-        gmm2.covariance_type = 'full'
-        gmm2.weights_ = pred_model.gmm_weights
-
-        covar_data2 = (gmm2.covariances_, gmm2.covariance_type)
-        gmm2.precisions_cholesky_ = _compute_precision_cholesky(*covar_data2)
-        import pdb; pdb.set_trace()
-
         return gmm
 
-    def get_heatmaps(self, n_samples=250):
+    def get_heatmaps(self, n_samples=250, condition_gmm=True):
         model_sub_bbox = self.boxes[self.model_sub_bbox_id]
         model_obj_bbox = self.boxes[self.model_obj_bbox_id]
         bbox_pairs = [(model_sub_bbox, model_obj_bbox)]
@@ -319,20 +308,27 @@ class ImageQueryData(object):
 
         box_maps = []
         for sub_bbox, obj_bbox in bbox_pairs:
-            # Condition and sample the GMM
-            rel_width = sub_bbox[2] / obj_bbox[2]
-            rel_height = sub_bbox[3] / obj_bbox[3]
-            gmm = self.get_conditional_gmm(self.pred_model, rel_width,
-                                           rel_height)
-            samples = gmm.sample(n_samples)[0]
-
-            # Figure out width and height
             box_map = np.zeros((self.image.image_width,
                                 self.image.image_height))
+
+            # Possibly condition and sample the GMM
+            if condition_gmm:
+                rel_width = sub_bbox[2] / obj_bbox[2]
+                rel_height = sub_bbox[3] / obj_bbox[3]
+                gmm = self.get_conditional_gmm(self.pred_model, rel_width,
+                                               rel_height)
+                samples = gmm.sample(n_samples)[0]
+                obj_w = np.full(n_samples, obj_bbox[2])
+                obj_h = np.full(n_samples, obj_bbox[3])
+            else:
+                gmm = gmm_viz.get_gmm(self.pred_model)
+                samples = gmm.sample(n_samples)[0]
+                obj_w = samples[:, 2] * sub_bbox[2]
+                obj_h = samples[:, 3] * sub_bbox[3]
+
             # Calculate center x and y
             sub_bbox_center_x = (sub_bbox[0] + 0.5 * sub_bbox[2])
             sub_bbox_center_y = (sub_bbox[1] + 0.5 * sub_bbox[3])
-            obj_w, obj_h = np.full(250, obj_bbox[2]), np.full(250, obj_bbox[3])
             obj_x = (sub_bbox_center_x - sub_bbox[2] * samples[:, 0] -
                      0.5 * obj_w)
             obj_y = (sub_bbox_center_y - sub_bbox[3] * samples[:, 1] -
@@ -341,7 +337,6 @@ class ImageQueryData(object):
             # Blit all samples
             obj_samples = np.vstack((obj_x, obj_y, obj_w, obj_h)).T
             for obj_sample in obj_samples:
-                print(obj_sample)
                 gmm_viz.blit_sample(box_map, obj_sample)
             box_maps.append(box_map)
 
@@ -406,7 +401,7 @@ class ImageQueryData(object):
         bbox_index = np.argmax(mean_ious)
         return bbox_pairs[bbox_index]
 
-    def compute_plot_data(self):
+    def compute_plot_data(self, condition_gmm=True):
         self.model_sub_bbox_id, self.model_obj_bbox_id = self.get_model_boxes()
         self.image_sub_bbox, self.image_obj_bbox = self.get_image_boxes()
         (self.close_sub_bbox_id, self.close_obj_bbox_id,
@@ -422,7 +417,8 @@ class ImageQueryData(object):
         ((self.model_raw_pred_score, self.model_pred_score),
          (self.close_raw_pred_score, self.close_pred_score),
          (self.gt_raw_pred_score, self.gt_pred_score)) = self.get_pred_scores()
-        self.model_heatmap, self.gt_heatmap = self.get_heatmaps()
+        (self.model_heatmap,
+         self.gt_heatmap) = self.get_heatmaps(condition_gmm=condition_gmm)
         self.image_array = self.get_image_array()
         self.query_text = self.get_query_text()
         (self.model_total_pot, self.gt_total_pot,
@@ -434,7 +430,7 @@ class ImageQueryData(object):
         return patches.Rectangle((bbox[0], bbox[1]),
                                  bbox[2], bbox[3], **params)
 
-    def generate_plot(self, save_path=None):
+    def generate_plot(self, save_path=None, sigma_blur=None):
         if not self.initialized_:
             raise NotInitializedException('ImageQueryData not initialized')
 
@@ -446,8 +442,14 @@ class ImageQueryData(object):
         ax2.imshow(self.image_array, cmap='gray')
 
         # Draw heatmaps
-        model_heatmap_blur = gaussian_filter(self.model_heatmap, sigma=7)
-        gt_heatmap_blur = gaussian_filter(self.gt_heatmap, sigma=7)
+        if sigma_blur is not None:
+            model_heatmap_blur = gaussian_filter(self.model_heatmap,
+                                                 sigma=sigma_blur)
+            gt_heatmap_blur = gaussian_filter(self.gt_heatmap,
+                                              sigma=sigma_blur)
+        else:
+            model_heatmap_blur = self.model_heatmap
+            gt_heatmap_blur = self.gt_heatmap
         heatmaps = ((model_heatmap_blur, gt_heatmap_blur) if self.compute_gt
                     else (model_heatmap_blur,))
         vmin, vmax = np.min(heatmaps), np.max(heatmaps)
@@ -644,7 +646,7 @@ def generate_all_query_plots(queries, if_data, negs_per_query=20):
 
 def generate_test_plot(queries, if_data):
     iqd = ImageQueryData(queries['simple_graphs'][4], 4, 38, if_data)
-    iqd.compute_plot_data()
+    iqd.compute_plot_data(condition_gmm=False)
     iqd.generate_plot()
 
 
