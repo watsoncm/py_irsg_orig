@@ -5,3 +5,5 @@ data/all_data.h5
 csv.tar.gz
 output/
 vg_dataset/
+sg_dataset/
+sg_dataset.zip

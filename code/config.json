@@ -1,11 +1,12 @@
 {
 	"file_paths": 
 	{
-		"output_path": "/home/watsonc/py_irsg_orig/output/",
-        	"image_path": "/home/watsonc/py_irsg_orig/sg_dataset/sg_test_images/",
-	        "mat_path": "/home/watsonc/py_irsg_orig/data/",
-	        "vg_data": "/home/watsonc/py_irsg_orig/vg_dataset/",
+        "output_path": "/home/watsonc/py_irsg_orig/output/",
+        "image_path": "/home/watsonc/py_irsg_orig/sg_dataset/sg_test_images/",
+	    "mat_path": "/home/watsonc/py_irsg_orig/data/",
+	    "vg_data": "/home/watsonc/py_irsg_orig/vg_dataset/",
 		"csv_path": "/home/watsonc/py_irsg_orig/csv/",
-		"hdf_path": "/home/watsonc/py_irsg_orig/data/all_data.h5"
+		"hdf_path": "/home/watsonc/py_irsg_orig/data/all_data.h5",
+        "sg_path": "/home/watsonc/py_irsg_orig/sg_dataset/"
 	}
 }

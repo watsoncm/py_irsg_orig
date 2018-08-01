@@ -5,6 +5,7 @@ import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.io.matlab.mio5_params as siom
 from matplotlib import patches
 from PIL import Image
 from tqdm import tqdm
@@ -17,47 +18,70 @@ from sklearn.mixture.gaussian_mixture import _compute_precision_cholesky
 import data_pull as dp
 import image_fetch_core as ifc
 import image_fetch_utils as ifu
+import image_fetch_querygen as ifq
 import gmm_viz
 
 with open('config.json') as f:
     cfg_data = json.load(f)
     out_path = cfg_data['file_paths']['output_path']
-
-
-# Thanks to PyPR for this implementation, which is only slightly tweaked
-# from the original for compatibility with newer versions of NumPy
-# and overall numerical stability.
-
-def cond_dist(Y, centroids, ccov, mc):
-    not_set_idx = np.nonzero(np.isnan(Y))[0]
-    set_idx = np.nonzero(np.bitwise_not(np.isnan(Y)))[0]
-    new_idx = np.concatenate((not_set_idx, set_idx))
-    y = Y[set_idx]
-    new_cen = []
-    new_ccovs = []
-    fk = []
-    for i in range(len(centroids)):
-        new_ccov = copy.deepcopy(ccov[i])
-        new_ccov = new_ccov[:, new_idx]
-        new_ccov = new_ccov[new_idx, :]
-        ux = centroids[i][not_set_idx]
-        uy = centroids[i][set_idx]
-        A = new_ccov[:len(not_set_idx), :len(not_set_idx)]
-        B = new_ccov[len(not_set_idx):, len(not_set_idx):]
-        C = new_ccov[:len(not_set_idx), len(not_set_idx):]
-        cen = ux + np.dot(np.dot(C, np.linalg.inv(B)), (y - uy))
-        cov = A - np.dot(np.dot(C, np.linalg.inv(B)), C.transpose())
-        new_cen.append(cen)
-        new_ccovs.append(cov)
-        fk.append(multivariate_normal.logpdf(Y[set_idx], uy, B))
-    fk = np.array(fk).flatten()
-    log_new_mc = np.log(mc) + fk - logsumexp(a=fk, b=mc)
-    new_mc = np.exp(log_new_mc)
-    return (new_cen, new_ccovs, new_mc)
+    data_path = cfg_data['file_paths']['mat_path']
 
 
 class NotInitializedException(Exception):
     pass
+
+
+class ConditionedIRSGMM(object):
+    def __init__(self, gmm, rel_width, rel_height):
+        self.gmm = gmm
+        self.rel_width = rel_width
+        self.rel_height = rel_height
+        cond_data = self.condition(self.gmm, self.rel_width, self.rel_height)
+        self.means, self.covariances, self.log_weights = cond_data
+
+    # Kudos to PyPR for this conditioning algorithm
+    @staticmethod
+    def condition(gmm, rel_width, rel_height):
+        y = np.array([rel_width, rel_height])
+        new_means = []
+        new_covs = []
+        densities = []
+        for i in range(len(gmm.means_)):
+            covar_copy = copy.deepcopy(gmm.covariances_[i])
+            mean_x = gmm.means_[i][:2]
+            mean_y = gmm.means_[i][2:]
+            A = covar_copy[:2, :2]
+            B = covar_copy[2:, 2:]
+            C = covar_copy[:2, 2:]
+            new_mean = mean_x + np.dot(np.dot(C, np.linalg.inv(B)),
+                                       (y - mean_y))
+            new_cov = A - np.dot(np.dot(C, np.linalg.inv(B)), C.transpose())
+            new_means.append(new_mean)
+            new_covs.append(new_cov)
+            densities.append(multivariate_normal.logpdf(y, mean_y, B))
+        densities = np.array(densities).flatten()
+        new_log_weights = (np.log(gmm.weights_) + densities -
+                           logsumexp(a=densities, b=gmm.weights_))
+        return new_means, new_covs, new_log_weights
+
+    # Kudos to jakevdp for this log sampling solution, and
+    # sklearn for the general sampling form
+    def sample(self, n_samples=1):
+        exp_samples = -np.random.exponential(size=n_samples)
+        bin_probs = np.hstack([[-np.inf], self.log_weights])
+        bins = np.logaddexp.accumulate(bin_probs)
+        bins -= bins[-1]
+        n_samples_comp = np.histogram(exp_samples, bins=bins)[0]
+        samples = [np.random.multivariate_normal(mean, cov, sample)
+                   for mean, cov, sample in zip(
+                       self.means, self.covariances, n_samples_comp)]
+        return np.vstack(samples)
+
+    # Kudos to sklearn for the general scoring strategy
+    def score_samples(self, samples):
+        log_probs = [multivariate_normal.logpdf(samples, mean, cov)
+                     for mean, cov in zip(self.means, self.covariances)]
+        return logsumexp(np.column_stack(log_probs) + self.log_weights, axis=1)
 
 
 class ImageQueryData(object):
@@ -196,15 +220,17 @@ class ImageQueryData(object):
         obj_pot_id = self.class_to_idx['obj:' + self.query_obj] - 1
         model_sub_pot = self.image_scores[self.model_sub_bbox_id, sub_pot_id]
         model_obj_pot = self.image_scores[self.model_obj_bbox_id, obj_pot_id]
+        eps = np.finfo(np.float).eps
+        model_pots = (model_sub_pot, model_obj_pot)
         if self.compute_gt:
             close_sub_pot = self.image_scores[self.close_sub_bbox_id,
                                               sub_pot_id]
             close_obj_pot = self.image_scores[self.close_obj_bbox_id,
                                               obj_pot_id]
-            log_pots = [-np.log(pot) for pot in (model_sub_pot, model_obj_pot,
-                                                 close_sub_pot, close_obj_pot)]
+            close_pots = (close_sub_pot, close_obj_pot)
+            log_pots = [-np.log(pot + eps) for pot in model_pots + close_pots]
         else:
-            log_pots = [-np.log(pot) for pot in (model_sub_pot, model_obj_pot)]
+            log_pots = [-np.log(pot + eps) for pot in model_pots]
             log_pots.extend([None, None])
         return log_pots
 
@@ -219,18 +245,19 @@ class ImageQueryData(object):
         else:
             close_sub_attr_pots, close_obj_attr_pots = None, None
 
+        eps = np.finfo(np.float).eps
         for pot_id in sub_attr_pot_ids:
             model_pot = self.image_scores[self.model_sub_bbox_id, pot_id]
-            model_sub_attr_pots.append(-np.log(model_pot))
+            model_sub_attr_pots.append(-np.log(model_pot + eps))
             if self.compute_gt:
                 gt_pot = self.image_scores[self.close_sub_bbox_id, pot_id]
-                close_sub_attr_pots.append(-np.log(gt_pot))
+                close_sub_attr_pots.append(-np.log(gt_pot + eps))
         for pot_id in obj_attr_pot_ids:
             model_pot = self.image_scores[self.model_obj_bbox_id, pot_id]
-            model_obj_attr_pots.append(-np.log(model_pot))
+            model_obj_attr_pots.append(-np.log(model_pot + eps))
             if self.compute_gt:
                 gt_pot = self.image_scores[self.close_obj_bbox_id, pot_id]
-                close_obj_attr_pots.append(-np.log(gt_pot))
+                close_obj_attr_pots.append(-np.log(gt_pot + eps))
         return (model_sub_attr_pots, model_obj_attr_pots,
                 close_sub_attr_pots, close_obj_attr_pots)
 
@@ -282,24 +309,55 @@ class ImageQueryData(object):
         return model_pred_scores, close_pred_scores, gt_pred_scores
 
     @staticmethod
-    def get_conditional_gmm(pred_model, width, height):
-        print((pred_model.gmm_mu, pred_model.gmm_sigma,
-               pred_model.gmm_weights))
-        result = cond_dist(np.array([np.nan, np.nan, width, height]),
-                           list(pred_model.gmm_mu), list(pred_model.gmm_sigma),
-                           list(pred_model.gmm_weights))
-        new_mu, new_sigma, new_weights = [np.array(part) for part in result]
-        gmm = mixture.GaussianMixture(new_weights.size)
-        gmm.means_ = new_mu
-        gmm.covariances_ = new_sigma
+    def get_gmm(means, covariances, weights):
+        gmm = mixture.GaussianMixture(weights.size)
+        gmm.means_ = means
+        gmm.covariances_ = covariances
         gmm.covariance_type = 'full'
-        gmm.weights_ = new_weights
-
+        gmm.weights_ = weights
         covar_data = (gmm.covariances_, gmm.covariance_type)
         gmm.precisions_cholesky_ = _compute_precision_cholesky(*covar_data)
         return gmm
 
-    def get_heatmaps(self, n_samples=250, condition_gmm=True):
+    @staticmethod
+    def visualize_gmm_pair(gmm, cond_gmm, rel_width, rel_height):
+        x_vals, y_vals = np.linspace(-20.0, 20.0), np.linspace(-20.0, 20.0)
+        x_grid, y_grid = np.meshgrid(x_vals, y_vals)
+        w_grid = np.full(x_grid.size, rel_width)
+        h_grid = np.full(x_grid.size, rel_height)
+
+        cond_inputs = np.array([x_grid.ravel(), y_grid.ravel()]).T
+        inputs = np.array([x_grid.ravel(), y_grid.ravel(), w_grid, h_grid]).T
+        gmm_scores = gmm.score_samples(inputs)
+        cond_gmm_scores = cond_gmm.score_samples(cond_inputs)
+        z_grid = gmm_scores.reshape(x_grid.shape)
+        cond_z_grid = cond_gmm_scores.reshape(x_grid.shape)
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 10))
+        plt.subplots_adjust(bottom=0.2)
+        ax1.set_title('Ground truth')
+        ax2.set_title('Conditioned GMM')
+
+        text_format = 'Weights: {}\nMeans: {}'
+        cond_text_format = 'Log weights: {}\nMeans: {}'
+        gt_text = text_format.format(gmm.weights_, gmm.means_)
+        cond_text = cond_text_format.format(cond_gmm.log_weights,
+                                            np.array(cond_gmm.means))
+        ax1.text(0.02, -0.1, gt_text, horizontalalignment='left',
+                 verticalalignment='top', transform=ax1.transAxes,
+                 fontsize=10)
+        ax2.text(0.02, -0.1, cond_text, horizontalalignment='left',
+                 verticalalignment='top', transform=ax2.transAxes,
+                 fontsize=10)
+
+        contour = ax1.contour(x_grid, y_grid, z_grid, colors='k')
+        ax1.clabel(contour, fontsize=9, inline=1)
+        cond_contour = ax2.contour(x_grid, y_grid, cond_z_grid, colors='k')
+        ax2.clabel(cond_contour, fontsize=9, inline=1)
+        plt.show()
+
+    def get_heatmaps(self, n_samples=250, condition_gmm=False,
+                     visualize_gmm=False):
         model_sub_bbox = self.boxes[self.model_sub_bbox_id]
         model_obj_bbox = self.boxes[self.model_obj_bbox_id]
         bbox_pairs = [(model_sub_bbox, model_obj_bbox)]
@@ -310,21 +368,27 @@ class ImageQueryData(object):
         for sub_bbox, obj_bbox in bbox_pairs:
             box_map = np.zeros((self.image.image_width,
                                 self.image.image_height))
+            gmm = self.get_gmm(self.pred_model.gmm_mu,
+                               self.pred_model.gmm_sigma,
+                               self.pred_model.gmm_weights)
+            rel_width = sub_bbox[2] / obj_bbox[2]
+            rel_height = sub_bbox[3] / obj_bbox[3]
 
             # Possibly condition and sample the GMM
             if condition_gmm:
-                rel_width = sub_bbox[2] / obj_bbox[2]
-                rel_height = sub_bbox[3] / obj_bbox[3]
-                gmm = self.get_conditional_gmm(self.pred_model, rel_width,
-                                               rel_height)
-                samples = gmm.sample(n_samples)[0]
+                cond_gmm = ConditionedIRSGMM(gmm, rel_width, rel_height)
+                samples = cond_gmm.sample(n_samples)
                 obj_w = np.full(n_samples, obj_bbox[2])
                 obj_h = np.full(n_samples, obj_bbox[3])
             else:
-                gmm = gmm_viz.get_gmm(self.pred_model)
-                samples = gmm.sample(n_samples)[0]
+                cond_gmm = None
+                samples = gmm.sample(n_samples)
                 obj_w = samples[:, 2] * sub_bbox[2]
                 obj_h = samples[:, 3] * sub_bbox[3]
+
+            # Visualize our GMMs
+            if visualize_gmm:
+                self.visualize_gmm_pair(gmm, cond_gmm, rel_width, rel_height)
 
             # Calculate center x and y
             sub_bbox_center_x = (sub_bbox[0] + 0.5 * sub_bbox[2])
@@ -401,7 +465,7 @@ class ImageQueryData(object):
         bbox_index = np.argmax(mean_ious)
         return bbox_pairs[bbox_index]
 
-    def compute_plot_data(self, condition_gmm=True):
+    def compute_potential_data(self, use_relationships=True):
         self.model_sub_bbox_id, self.model_obj_bbox_id = self.get_model_boxes()
         self.image_sub_bbox, self.image_obj_bbox = self.get_image_boxes()
         (self.close_sub_bbox_id, self.close_obj_bbox_id,
@@ -411,18 +475,24 @@ class ImageQueryData(object):
         (self.model_sub_attr_pots, self.model_obj_attr_pots,
          self.close_sub_attr_pots,
          self.close_obj_attr_pots) = self.get_attr_scores()
-        self.pred_model, self.pred_model_name = self.get_pred_model()
-        if self.pred_model is None:
-            raise ValueError('no relevant relationship model exists')
-        ((self.model_raw_pred_score, self.model_pred_score),
-         (self.close_raw_pred_score, self.close_pred_score),
-         (self.gt_raw_pred_score, self.gt_pred_score)) = self.get_pred_scores()
+        if use_relationships:
+            self.pred_model, self.pred_model_name = self.get_pred_model()
+            if self.pred_model is None:
+                raise ValueError('no relevant relationship model exists')
+            ((self.model_raw_pred_score, self.model_pred_score),
+             (self.close_raw_pred_score, self.close_pred_score),
+             (self.gt_raw_pred_score,
+              self.gt_pred_score)) = self.get_pred_scores()
+            (self.model_total_pot, self.gt_total_pot,
+             self.close_total_pot) = self.get_total_pots()
+
+    def compute_plot_data(self, condition_gmm=False, visualize_gmm=False):
+        self.compute_potential_data()
         (self.model_heatmap,
-         self.gt_heatmap) = self.get_heatmaps(condition_gmm=condition_gmm)
+         self.gt_heatmap) = self.get_heatmaps(condition_gmm=condition_gmm,
+                                              visualize_gmm=visualize_gmm)
         self.image_array = self.get_image_array()
         self.query_text = self.get_query_text()
-        (self.model_total_pot, self.gt_total_pot,
-         self.close_total_pot) = self.get_total_pots()
         self.initialized_ = True
 
     @staticmethod
@@ -435,7 +505,7 @@ class ImageQueryData(object):
             raise NotInitializedException('ImageQueryData not initialized')
 
         # Set up plot
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 12))
         ax1.axis('off')
         ax2.axis('off')
         ax1.imshow(self.image_array, cmap='gray')
@@ -478,17 +548,17 @@ class ImageQueryData(object):
         alt_obj_params = dict(obj_params.items() + [('linestyle', 'dashed')])
 
         # Add descriptive text
-        ax1.text(0.02, 0.02, 'IRSG grounding'.format(self.query_text),
-                 horizontalalignment='left', verticalalignment='bottom',
+        ax1.text(0.02, -0.02, 'IRSG grounding'.format(self.query_text),
+                 horizontalalignment='left', verticalalignment='top',
                  **ax1_params)
-        ax2.text(0.02, 0.02, 'Ground truth'.format(self.query_text),
-                 horizontalalignment='left', verticalalignment='bottom',
+        ax2.text(0.02, -0.02, 'Ground truth'.format(self.query_text),
+                 horizontalalignment='left', verticalalignment='top',
                  **ax2_params)
-        ax1.text(0.98, 0.02, 'Query: "{}"'.format(self.query_text),
-                 horizontalalignment='right', verticalalignment='bottom',
+        ax1.text(0.98, -0.02, 'Query: "{}"'.format(self.query_text),
+                 horizontalalignment='right', verticalalignment='top',
                  **ax1_params)
-        ax2.text(0.98, 0.02, 'Query: "{}"'.format(self.query_text),
-                 horizontalalignment='right', verticalalignment='bottom',
+        ax2.text(0.98, -0.02, 'Query: "{}"'.format(self.query_text),
+                 horizontalalignment='right', verticalalignment='top',
                  **ax2_params)
 
         # Add bounding boxes
@@ -517,8 +587,8 @@ class ImageQueryData(object):
                           'Object IOU: {:.3f}')
             iou_ok = self.sub_iou >= 0.5 and self.obj_iou >= 0.5
             iou_text = iou_format.format(iou_ok, self.sub_iou, self.obj_iou)
-            ax2.text(0.98, 0.98, iou_text, horizontalalignment='right',
-                     verticalalignment='top', **ax2_params)
+            ax2.text(0.98, 1.03, iou_text, horizontalalignment='right',
+                     verticalalignment='bottom', **ax2_params)
 
         # Extract attribute energy text
         attr_format = '        {} -> {}: {:.6f}'
@@ -565,8 +635,8 @@ class ImageQueryData(object):
                              self.model_raw_pred_score,
                              '\n'.join(model_attr_lines), self.model_total_pot)
         model_score_text = model_score_format.format(*model_score_parts)
-        ax1.text(0.02, 0.98, model_score_text, horizontalalignment='left',
-                 verticalalignment='top', **ax1_params)
+        ax1.text(0.02, 1.03, model_score_text, horizontalalignment='left',
+                 verticalalignment='bottom', **ax1_params)
 
         if self.compute_gt:
             gt_score_parts = (self.query_sub, self.close_sub_pot,
@@ -577,8 +647,8 @@ class ImageQueryData(object):
                               '\n'.join(gt_attr_lines), self.close_total_pot,
                               self.gt_total_pot)
             gt_score_text = gt_score_format.format(*gt_score_parts)
-            ax2.text(0.02, 0.98, gt_score_text, horizontalalignment='left',
-                     verticalalignment='top', **ax2_params)
+            ax2.text(0.02, 1.03, gt_score_text, horizontalalignment='left',
+                     verticalalignment='bottom', **ax2_params)
 
         fig.tight_layout()
         if save_path is None:
@@ -598,10 +668,10 @@ def generate_tp_neg(tp_data_pos, n_queries, n_images, negs_per_query):
     return tp_data_neg
 
 
-def generate_all_query_plots(queries, if_data, negs_per_query=20):
-    simple_graphs = queries['simple_graphs']
-    tp_data_pos = ifu.get_partial_scene_matches(if_data.vg_data, simple_graphs)
-    tp_data_neg = generate_tp_neg(tp_data_pos, len(simple_graphs),
+def generate_all_query_plots(queries, if_data, condition_gmm=False,
+                             visualize_gmm=False, negs_per_query=20):
+    tp_data_pos = ifu.get_partial_scene_matches(if_data.vg_data, queries)
+    tp_data_neg = generate_tp_neg(tp_data_pos, len(queries),
                                   len(if_data.vg_data), negs_per_query)
     output_dir = os.path.join(out_path, 'query_viz')
     if not os.path.exists(output_dir):
@@ -613,8 +683,8 @@ def generate_all_query_plots(queries, if_data, negs_per_query=20):
     for tp_data, energies, is_pos in ((tp_data_pos, positive_energies, True),
                                       (tp_data_neg, negative_energies, False)):
         label = 'pos' if is_pos else 'neg'
-        for query_index, query in tqdm(enumerate(simple_graphs), desc='graphs',
-                                       total=len(simple_graphs)):
+        for query_index, query in tqdm(enumerate(queries), desc='graphs',
+                                       total=len(queries)):
             for image_index in tp_data[query_index]:
                 image_name = 'q{:03d}_i{:03d}_{}.png'.format(query_index,
                                                              image_index,
@@ -623,8 +693,10 @@ def generate_all_query_plots(queries, if_data, negs_per_query=20):
                 iqd = ImageQueryData(query, query_index, image_index, if_data,
                                      compute_gt=is_pos)
                 try:
-                    iqd.compute_plot_data()
+                    iqd.compute_plot_data(condition_gmm=condition_gmm,
+                                          visualize_gmm=visualize_gmm)
                 except ValueError:
+                    print('skieeeepinging')
                     continue
                 iqd.generate_plot(save_path=save_path)
                 energies[save_path] = iqd.model_energy
@@ -646,11 +718,24 @@ def generate_all_query_plots(queries, if_data, negs_per_query=20):
 
 def generate_test_plot(queries, if_data):
     iqd = ImageQueryData(queries['simple_graphs'][4], 4, 38, if_data)
-    iqd.compute_plot_data(condition_gmm=False)
+    iqd.compute_plot_data(condition_gmm=True, visualize_gmm=True)
     iqd.generate_plot()
+
+
+def generate_queries_from_file(path):
+    queries = []
+    with open(path) as f:
+        for line in f.read().splitlines():
+            query_struct = siom.mat_struct()
+            query_struct.annotations = ifq.gen_sro(line)
+            queries.append(query_struct)
+    return queries
 
 
 if __name__ == '__main__':
     _, _, _, _, queries, if_data = dp.get_all_data(use_csv=True)
-    # generate_all_query_plots(queries, if_data)
-    generate_test_plot(queries, if_data)
+    path = os.path.join(data_path, 'queries.txt')
+    queries = generate_queries_from_file(path)
+    generate_all_query_plots(queries, if_data, condition_gmm=True,
+                             visualize_gmm=False)
+    # generate_test_plot(queries, if_data)
