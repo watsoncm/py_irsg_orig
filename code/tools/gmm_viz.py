@@ -8,7 +8,7 @@ from sklearn.mixture.gaussian_mixture import _compute_precision_cholesky
 from scipy.ndimage.filters import gaussian_filter
 from PIL import Image
 
-import data_pull as dp
+import irsg_core.data_pull as dp
 
 
 def get_gmm(gmm_params):

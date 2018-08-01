@@ -1,10 +1,11 @@
 import os
 import json
 
-import data_pull as dp
+import irsg_core.data_pull as dp
 import query_viz
+from config import get_config_path
 
-with open('config.json') as f:
+with open(get_config_path()) as f:
     cfg_data = json.load(f)
     out_path = cfg_data['file_paths']['output_path']
 

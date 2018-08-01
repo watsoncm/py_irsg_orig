@@ -8,11 +8,11 @@ import numpy as np
 import scipy.io.matlab.mio5_params as siom
 from tqdm import tqdm
 
-import data_pull as dp
-import image_fetch_core as ifc
-import image_fetch_plot as ifp
-import image_fetch_wrappers as ifw
-import image_fetch_utils as ifu
+import irsg_core.data_pull as dp
+import irsg_core.image_fetch_core as ifc
+import irsg_core.image_fetch_plot as ifp
+import irsg_core.image_fetch_wrappers as ifw
+import irsg_core.image_fetch_utils as ifu
 from gmm_viz import visualize_gmm
 
 CSV_DESCRIPTION = '''# query_index: which constructed query we're on
@@ -39,8 +39,9 @@ def image_batch_double(query, query_id, if_data, output_path, image_ix_subset):
     image_format = '{}_q{:03d}i{:03d}.png'
 
     for i in image_ix_subset:
-        inference_data = ifw.inference_pass(query, query_id, i, if_data, 'original')
-        _, _, energy, best_matches, _, duration = inference_data
+        inference_data = ifw.inference_pass(query, query_id, i,
+                                            if_data, 'original')
+        _, tracker, energy, best_matches, _, duration = inference_data
         energy_list.append(energy)
         time_list.append(duration)
 
@@ -90,11 +91,10 @@ def gmm_plot_double(query, query_id, if_data, output_path, image_ix_subset):
 
             # create gmm plots
             inference_data = ifw.inference_pass(query.annotations, query_id,
-                                                image_index, if_data, 'original')
+                                                image_index, if_data,
+                                                'original')
             _, _, energy, best_matches, _, duration = inference_data
-            energy_str = '{:06f}'.format(energy).replace('.', '_')
             image_name = 'q{:03d}_i{:03d}.png'.format(query_id, image_index)
-
             save_path = os.path.join(output_path, image_name)
             visualize_gmm(model_name, image_index, match.subject, match.object,
                           if_data.vg_data, if_data.relationship_models, ifdata,
@@ -136,7 +136,8 @@ def get_double_queries(vgd):
 
     # create the new queries
     new_queries = []
-    top_subjects = [subject for subject, _ in double_subjects.most_common(10)]
+    top_subjects = [sub for sub, _ in
+                    double_subjects.most_common(10)]
     for subject in top_subjects:
         for predicate in double_predicates[subject]:
             new_queries.append(generate_query(subject, predicate))
@@ -148,18 +149,21 @@ def draw_double_plots(queries, tp_data, ifdata, gmm_plot=True):
         # set up batch directory
         now = datetime.now()
         subject = query.annotations.objects[0].names
-        predicate = query.annotations.binary_triples.predicate.replace(' ', '_')
+        triples = query.annotations.binary_triples
+        predicate = triples.predicate.replace(' ', '_')
         scene_text = '{}_{}_{}'.format(subject, predicate, subject)
         batch_format = '{}_overlap_q{:03}_{}{:02}{:02}_{:02}{:02}{:02}/'
         batch_dir = batch_format.format(scene_text, index, now.year, now.month,
-                                        now.day, now.hour, now.minute, now.second)
+                                        now.day, now.hour, now.minute,
+                                        now.second)
         batch_path = os.path.join(out_path, batch_dir)
         os.mkdir(batch_path)
 
         if gmm_plot:
             gmm_plot_double(query, index, ifdata, batch_path, tp_data[index])
         else:
-            image_batch_double(query, index, ifdata, batch_path, tp_data[index])
+            image_batch_double(query, index, ifdata, batch_path,
+                               tp_data[index])
 
 
 def score_boxes(subject_box, object_box, rel_params):
@@ -179,7 +183,7 @@ def score_boxes(subject_box, object_box, rel_params):
     eps = np.finfo(np.float).eps
     scores = np.log(eps + scores)
     sig_scores = 1.0 / (1.0 + np.exp(rel_params.platt_a * scores +
-                                    rel_params.platt_b))
+                                     rel_params.platt_b))
 
     return scores[0], sig_scores[0]
 
@@ -205,19 +209,19 @@ def quiet_inference_pass(query, query_id, image_ix, if_data):
 
 
 def test_gmm_density(queries, tp_data, vgd, bin_mod, ifdata, output_path):
-    scores = []
-    gt_scores = []
     with open(output_path, 'wb') as f:
         f.write(CSV_DESCRIPTION)
         csv_writer = csv.writer(f, lineterminator='\n')
         csv_writer.writerow(('query_index', 'image_index', 'subject',
-                             'predicate', 'binary_score', 'max_gt_binary_score',
+                             'predicate', 'binary_score',
+                             'max_gt_binary_score',
                              'mean_gt_binary_score', 'binary_prob',
                              'mean_gt_binary_prob', 'binary_model_used',
                              'platt_a', 'platt_b', 'double_boxed'))
         for query_index, query in tqdm(enumerate(queries), total=len(queries),
                                        desc='double queries'):
-            rel_params, rel_name = get_relationship_model(query.annotations, bin_mod)
+            rel_params, rel_name = get_relationship_model(query.annotations,
+                                                          bin_mod)
             if rel_params is None:
                 continue
             for image_index in tp_data[query_index]:
@@ -226,10 +230,12 @@ def test_gmm_density(queries, tp_data, vgd, bin_mod, ifdata, output_path):
                 rel = query.annotations.binary_triples.predicate
 
                 # run inference
-                pass_data = quiet_inference_pass(query.annotations, query_index,
+                pass_data = quiet_inference_pass(query.annotations,
+                                                 query_index,
                                                  image_index, ifdata)
                 _, tracker, _, best_matches, _ = pass_data
-                boxes = [tracker.box_pairs[index][1][:4] for index in best_matches]
+                boxes = [tracker.box_pairs[index][1][:4]
+                         for index in best_matches]
                 annotations = vgd['vg_data_test'][image_index].annotations
 
                 # get all ground truth boxes

@@ -2,11 +2,10 @@ import json
 
 import image_fetch_utils as ifu
 import image_fetch_dataset as ifd
-
-
+from config import get_config_path
 
 # load data paths from the config file
-cfg_file = open('config.json')
+cfg_file = open(get_config_path())
 cfg_data = json.load(cfg_file)
 
 out_path = cfg_data['file_paths']['output_path']

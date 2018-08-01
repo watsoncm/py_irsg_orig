@@ -4,15 +4,15 @@ import json
 
 import numpy as np
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 import query_viz
-import data_pull as dp
-import image_fetch_utils as ifu
-import image_fetch_plot as ifp
+import irsg_core.data_pull as dp
+import irsg_core.image_fetch_utils as ifu
+import irsg_core.image_fetch_plot as ifp
+from config import get_config_path
 
 
-with open('config.json') as f:
+with open(get_config_path()) as f:
     cfg_data = json.load(f)
     data_path = cfg_data['file_paths']['mat_path']
     out_path = cfg_data['file_paths']['output_path']

@@ -5,9 +5,10 @@ from collections import Counter
 
 import numpy as np
 
-import data_pull as dp
+import irsg_core.data_pull as dp
+from config import get_config_path
 
-with open('config.json') as f:
+with open(get_config_path()) as f:
     cfg_data = json.load(f)
     csv_path = cfg_data['file_paths']['csv_path']
 

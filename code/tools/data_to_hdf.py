@@ -1,4 +1,3 @@
-import csv
 import os
 import json
 
@@ -6,9 +5,10 @@ import h5py
 import numpy as np
 from tqdm import tqdm
 
-import data_pull as dp
+import irsg_core.data_pull as dp
+from config import get_config_path
 
-with open('config.json') as f:
+with open(get_config_path()) as f:
     cfg_data = json.load(f)
     data_path = cfg_data['file_paths']['mat_path']
 
@@ -28,10 +28,10 @@ def transfer_annotations(base_group, annotations, is_simple_graph=False):
         triples = np.array(triples).reshape(-1)  # ensure 1D
         if use_predicate:
             predicates = np.array([triple.predicate for triple in triples],
-                                   dtype='O')
+                                  dtype='O')
         subjects = np.array([triple.subject for triple in triples])
         objects = np.array([triple.object for triple in triples],
-                            dtype=obj_dtype)
+                           dtype=obj_dtype)
 
         # get the right dtype and place in HDF
         obj_data_dtype = str_dtype if obj_dtype is 'O' else obj_dtype
@@ -49,7 +49,7 @@ def transfer_annotations(base_group, annotations, is_simple_graph=False):
         object_name = 'object_{}'.format(obj_idx)
         object_group = objects_group.create_group(object_name)
         names = np.array(obj.names, dtype='O').reshape(-1)  # ensure 1D
-        object_group.create_dataset('names', data=obj.names,
+        object_group.create_dataset('names', data=names,
                                     dtype=str_dtype)
 
         # simple graphs don't provide bounding boxes
