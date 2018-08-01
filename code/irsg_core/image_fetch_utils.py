@@ -1,5 +1,4 @@
 import re
-import h5py
 import image_fetch_core as ifc
 import numpy as np
 import scipy.io as sio
