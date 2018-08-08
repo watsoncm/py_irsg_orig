@@ -46,18 +46,17 @@ def generate_all_query_plots(queries, if_data, condition_gmm=False,
         for query_index, query in tqdm(enumerate(queries), desc='graphs',
                                        total=len(queries)):
             for image_index in tp_data[query_index]:
-                image_name = 'q{:03d}_i{:03d}_{}.png'.format(query_index,
-                                                             image_index,
-                                                             label)
-                save_path = os.path.join(output_dir, image_name)
                 iqd = ImageQueryData(query, query_index, image_index, if_data,
                                      compute_gt=is_pos)
                 try:
                     iqd.compute_plot_data(condition_gmm=condition_gmm,
                                           visualize_gmm=visualize_gmm)
                 except ValueError:
-                    print('skieeeepinging')
                     continue
+                image_format = 'q{:03d}_i{:03d}_{}_{:.2f}.png'
+                image_name = image_format.format(query_index, image_index,
+                                                 label, iqd.model_energy)
+                save_path = os.path.join(output_dir, image_name)
                 iqd.generate_plot(save_path=save_path)
                 energies[save_path] = iqd.model_energy
 
@@ -84,10 +83,16 @@ def generate_test_plot(queries, if_data):
 
 def generate_queries_from_file(path):
     queries = []
+    gen_dict = {'(sro)': ifq.gen_sro,
+                '(srao)': ifq.gen_srao,
+                '(asro)': ifq.gen_asro,
+                '(asrao)': ifq.gen_asrao}
     with open(path) as f:
         for line in f.read().splitlines():
             query_struct = siom.mat_struct()
-            query_struct.annotations = ifq.gen_sro(line)
+            parts = line.split()
+            text, gen_func = ' '.join(parts[:-1]), gen_dict[parts[-1]]
+            query_struct.annotations = gen_func(text)
             queries.append(query_struct)
     return queries
 

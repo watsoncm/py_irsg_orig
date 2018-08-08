@@ -73,7 +73,8 @@ class ConditionedIRSGMM(object):
 
 
 class ImageQueryData(object):
-    def __init__(self, query, query_id, image_id, if_data, compute_gt=True):
+    def __init__(self, query, query_id, image_id, if_data, compute_gt=True,
+                 obj_weight=1./3., attr_weight=1./3., pred_weight=1./3.):
         self.query = query
         self.query_id = query_id
         query_triple = self.make_array(query.annotations.binary_triples)[0]
@@ -100,6 +101,13 @@ class ImageQueryData(object):
         self.class_to_idx = potentials['class_to_idx']
         self.initialized_ = False
         self.compute_gt = compute_gt
+
+        if not np.isclose(obj_weight + attr_weight + pred_weight, 1.0):
+            raise ValueError('object, attribute, and relationship weights '
+                             'must add to unity')
+        self.obj_weight = obj_weight
+        self.attr_weight = attr_weight
+        self.pred_weight = pred_weight
 
     @staticmethod
     def make_array(items_or_single):
@@ -394,21 +402,23 @@ class ImageQueryData(object):
         return np.array(pil_image)
 
     def get_total_pots(self):
-        model_total_pot = (self.model_sub_pot + self.model_obj_pot +
-                           self.model_pred_score)
-        model_addr_total = sum(self.model_sub_attr_pots +
-                               self.model_obj_attr_pots)
-        model_total_pot += model_addr_total
-
+        model_total_pot = self.obj_weight * (self.model_sub_pot +
+                                             self.model_obj_pot)
+        model_total_pot += self.pred_weight * self.model_pred_score
+        model_total_pot += self.attr_weight * sum(self.model_sub_attr_pots +
+                                                  self.model_obj_attr_pots)
         if self.compute_gt:
-            gt_total_pot = (self.close_sub_pot + self.close_obj_pot +
-                            self.gt_pred_score)
-            close_total_pot = (self.close_sub_pot + self.close_obj_pot +
-                               self.close_pred_score)
+            gt_total_pot = self.obj_weight * (self.close_sub_pot +
+                                              self.close_obj_pot)
+            gt_total_pot += self.pred_weight * self.gt_pred_score
+
+            close_total_pot = self.obj_weight * (self.close_sub_pot +
+                                                 self.close_obj_pot)
+            close_total_pot += self.pred_weight * self.close_pred_score
             close_addr_total = sum(self.close_sub_attr_pots +
                                    self.close_obj_attr_pots)
-            gt_total_pot += close_addr_total
-            close_total_pot += close_addr_total
+            close_total_pot += self.attr_weights * close_addr_total
+            gt_total_pot += self.attr_weights * close_addr_total
         else:
             close_total_pot, gt_total_pot = None, None
 

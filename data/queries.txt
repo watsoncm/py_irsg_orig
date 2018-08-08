@@ -1,15 +1,15 @@
-man wearing helmet
-bottle on table
-man on horse
-picture on wall
-sign on building
-man on bench
-woman next_to man
-man next_to man
-man holding controller
-man holding phone
-skateboard under shoes
-sign attached_to pole
-laptop next_to monitor
-monitor on desk
-woman wearing sunglasses
+man wearing black helmet                    (srao)
+bottle on brown table                       (srao)
+man on brown horse                          (srao)
+picture on beige wall                       (srao)
+sign on brown building                      (srao)
+man on wood bench                           (srao)
+smiling woman next_to man                   (asro)
+man next_to bald man                        (srao)
+standing man holding white controller       (asrao)
+sitting man holding phone                   (asro)
+brown skateboard under blue shoes           (asrao)
+sign attached_to metal pole                 (srao)
+on laptop next_to on monitor                (asrao)
+monitor on wooden desk                      (srao)
+woman wearing dark sunglasses               (srao)

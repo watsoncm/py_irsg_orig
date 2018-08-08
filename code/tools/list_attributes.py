@@ -51,5 +51,5 @@ if __name__ == '__main__':
     train_obj_count, train_attr_count = get_obj_attr_counts(if_data_train)
     train_objs = count_to_threshold_list(train_obj_count, 50)
     train_attrs = count_to_threshold_list(train_attr_count, 50)
-    write_obj_attr_counts(test_obj_count, test_attr_count, train_objs,
+    write_obj_attr_counts(train_obj_count, train_attr_count, train_objs,
                           train_attrs, csv_path)

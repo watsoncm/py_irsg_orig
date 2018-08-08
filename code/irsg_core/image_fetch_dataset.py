@@ -57,6 +57,12 @@ class CSVImageFetchDataset(ImageFetchDataset):
         self.potentials_data['scores'] = np.array([None for _ in range(self.n_images)])
         self.loaded_cache = []
 
+        # get attribute and object lists
+        self.all_objs = [obj[4:] for obj in class_to_idx.keys()
+                         if 'obj' in obj]
+        self.all_attrs = [attr[4:] for attr in class_to_idx.keys()
+                          if 'atr' in attr]
+
     def load_data(self, name, is_obj, test_image_num):
         csv_name = 'irsg_{}.csv'.format(test_image_num)
         dir_name = 'obj_files' if is_obj else 'attr_files'
@@ -74,25 +80,31 @@ class CSVImageFetchDataset(ImageFetchDataset):
         score_idx = self.potentials_data['class_to_idx'][full_name] - 1  # zero-index
         self.potentials_data['scores'][test_image_num][:, score_idx] = data_array[:, 4]
 
+    def load_relevant_data(self, test_image_num, sg_query, load_all=False):
+        if sg_query is not None or load_all:
+            obj_names = (self.all_objs if load_all else
+                         [np.array(obj.names).reshape(-1)[0]
+                          for obj in sg_query.objects])
+            attr_names = (self.all_attrs if load_all else
+                          [attr_name for _, attr_name
+                           in ifu.get_object_attributes(sg_query)])
+            for obj in obj_names:
+                if (obj, test_image_num) not in self.loaded_cache:
+                    if ('obj:{}'.format(obj) in
+                            self.potentials_data['classes'] or load_all):
+                        self.load_data(obj, True, test_image_num)
+                        self.loaded_cache.append((obj, test_image_num))
+            for attr in attr_names:
+                if (attr, test_image_num) not in self.loaded_cache:
+                    if ('atr:{}'.format(attr) in
+                            self.potentials_data['classes'] or load_all):
+                        self.load_data(attr, False, test_image_num)
+                        self.loaded_cache.append((attr, test_image_num))
 
-    def load_relevant_data(self, test_image_num, sg_query):
-        if sg_query is not None:
-            for obj in sg_query.objects:
-                name = np.array(obj.names).reshape(-1)[0]
-                if (name, test_image_num) not in self.loaded_cache:
-                    if 'obj:{}'.format(name) in self.potentials_data['classes']:
-                        self.load_data(name, True, test_image_num)
-                        self.loaded_cache.append((name, test_image_num))
-            for _, name in ifu.get_object_attributes(sg_query):
-                if (name, test_image_num) not in self.loaded_cache:
-                    if 'atr:{}'.format(name) in self.potentials_data['classes']:
-                        self.load_data(name, False, test_image_num)
-                        self.loaded_cache.append((name, test_image_num))
-
-    def configure(self, test_image_num, sg_query):
+    def configure(self, test_image_num, sg_query, load_all=False):
         if test_image_num != self.current_image_num:
             self.current_image_num = test_image_num
-            self.load_relevant_data(test_image_num, sg_query)
+            self.load_relevant_data(test_image_num, sg_query, load_all=load_all)
             self.object_detections = ifu.get_object_detections(self.current_image_num, self.potentials_data, self.platt_models, use_csv=True)
             self.attribute_detections = ifu.get_attribute_detections(self.current_image_num, self.potentials_data, self.platt_models, use_csv=True)
             self.image_filename = self.base_image_path + os.path.basename(self.vg_data[self.current_image_num].image_path)
