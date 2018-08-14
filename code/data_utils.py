@@ -6,8 +6,7 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-import irsg_core.image_fetch_utils as ifu
-import query_viz
+from image_query_data import ImageQueryData
 from config import get_config_path
 
 with open(get_config_path()) as f:
@@ -23,9 +22,9 @@ def generate_energy_data(queries, path, if_data, use_geometric=False,
         for image_id in tqdm(range(len(if_data.vg_data))):
             if iqd_params is None:
                 iqd_params = {}
-            iqd = query_viz.ImageQueryData(query, query_id, image_id,
-                                           if_data, compute_gt=False,
-                                           **iqd_params)
+            iqd = ImageQueryData(query, query_id, image_id,
+                                 if_data, compute_gt=False,
+                                 **iqd_params)
             iqd.compute_potential_data(use_relationships=not use_geometric)
             energy = (np.sqrt(iqd.model_sub_pot * iqd.model_obj_pot)
                       if use_geometric else iqd.model_total_pot)
@@ -99,3 +98,16 @@ def get_false_negs(path):
         false_negs = [(int(query_index), int(image_index))
                       for query_index, image_index in list(csv_reader)[1:]]
     return false_negs
+
+
+def get_text_parts(image_data, triple):
+    sub = image_data.annotations.objects[triple.subject]
+    obj = image_data.annotations.objects[triple.object]
+    sub_name = np.array(sub.names).reshape(-1)[0]
+    obj_name = np.array(obj.names).reshape(-1)[0]
+    return (sub_name, triple.predicate, obj_name)
+
+
+def get_indices(path, split):
+    with open(os.path.join(path, '{}.txt'.format(split))) as f:
+        return [int(line) for line in f.read().splitlines()]

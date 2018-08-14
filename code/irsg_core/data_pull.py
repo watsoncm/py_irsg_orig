@@ -4,53 +4,65 @@ import image_fetch_utils as ifu
 import image_fetch_dataset as ifd
 from config import get_config_path
 
-# load data paths from the config file
-cfg_file = open(get_config_path())
-cfg_data = json.load(cfg_file)
+with open(get_config_path()) as cfg_file:
+    cfg_data = json.load(cfg_file)
+    out_path = cfg_data['file_paths']['output_path']
+    img_path = cfg_data['file_paths']['image_path']
+    mat_path = cfg_data['file_paths']['mat_path']
+    csv_path = cfg_data['file_paths']['csv_path']
 
-out_path = cfg_data['file_paths']['output_path']
-img_path = cfg_data['file_paths']['image_path']
-mat_path = cfg_data['file_paths']['mat_path']
-csv_path = cfg_data['file_paths']['csv_path']
+vgd, potentials = None, None
+platt_mod, bin_mod, queries = None, None, None
+ifdata, hf = None, None
 
-# load model params
-vgd = None
-potentials = None
-platt_mod = None
-bin_mod = None
-queries = None
-ifdata = None
-hf = None
-
-data_loaded = {'test': False,
-               'train': False}
+data_loaded = {'train': False,
+               'val': False,
+               'test': False}
 
 
-def _load(use_csv=False, use_train=False):
-  global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  dataset, other = ('train', 'test') if use_train else ('test', 'train')
-  if not data_loaded[dataset]:
-    data = ifu.get_mat_data(mat_path, get_potentials=(not use_csv))
-    vgd, potentials, platt_mod, bin_mod, queries = data
-    vg_string = 'vg_data_train' if use_train else 'vg_data_test'
-    if use_csv:
-      ifdata = ifd.CSVImageFetchDataset(vgd[vg_string], platt_mod, bin_mod, img_path, csv_path)
-    else:
-      ifdata = ifd.ImageFetchDataset(vgd[vg_string], potentials, platt_mod, bin_mod, img_path)
-  data_loaded[dataset] = True
-  data_loaded[other] = False
+def _load(dataset='default', split='test', use_csv=False):
+    global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
+    if not data_loaded[split]:
+        if dataset == 'default':
+            get_potentials = not use_csv
+            get_bin_mod = True
+            get_platt_mod = True
+        else:
+            get_potentials = False
+            get_bin_mod = False
+            get_platt_mod = False
+            if not use_csv:
+                error = 'dataset {} must have use_csv=True'.format(dataset)
+                raise ValueError(error)
+        data = ifu.get_mat_data(mat_path, get_potentials=get_potentials,
+                                get_bin_mod=get_bin_mod,
+                                get_platt_mod=get_platt_mod)
+        vgd, potentials, platt_mod, bin_mod, queries = data
+        if use_csv:
+            ifdata = ifd.CSVImageFetchDataset(dataset, split, vgd, platt_mod,
+                                              bin_mod, img_path, csv_path)
+        else:
+            ifdata = ifd.ImageFetchDataset(split, vgd, potentials,
+                                           platt_mod, bin_mod, img_path)
 
-def get_all_data(use_csv=False, use_train=False):
-  global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load(use_csv=use_csv, use_train=use_train)
-  return vgd, potentials, platt_mod, bin_mod, queries, ifdata
+    for load_split in data_loaded.keys():
+        data_loaded[load_split] = False
+    data_loaded[dataset] = True
 
-def get_ifdata(use_csv=False, use_train=False):
-  global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load(use_csv=use_csv, use_train=use_train)
-  return ifdata
 
-def get_supplemental_data(use_csv=False, use_train=False):
-  global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
-  _load(use_csv=use_csv, use_train=use_train)
-  return vgd, potentials, platt_mod, bin_mod, queries
+def get_all_data(*args, **kwargs):
+    global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
+    _load(*args, **kwargs)
+    return vgd, potentials, platt_mod, bin_mod, queries, ifdata
+
+
+def get_ifdata(*args, **kwargs):
+    global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
+    _load(*args, **kwargs)
+    return ifdata
+
+
+def get_supplemental_data(*args, **kwargs):
+    global data_loaded, vgd, potentials, platt_mod, bin_mod, queries, ifdata
+    _load(*args, **kwargs)
+    return vgd, potentials, platt_mod, bin_mod, queries

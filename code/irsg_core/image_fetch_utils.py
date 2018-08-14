@@ -20,7 +20,8 @@ class RelationshipParameters (object):
 # Functions for reading and manipulating the MATLAB .mat files into more
 #  python-friendly structures
 #===============================================================================
-def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/", get_potentials=True):
+def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/",
+                 get_potentials=True, get_bin_mod=True, get_platt_mod=True):
   """
   load the data files for use in running the model.
   expects the files to be all in the same directory
@@ -46,14 +47,20 @@ def get_mat_data(data_path="/home/econser/School/Thesis/code/model_params/", get
   else:
     potentials = None
   
-  print("loading binary model data...")
-  binary_path = data_path + "binary_models_struct.mat"
-  bin_mod_mat = sio.loadmat(binary_path, struct_as_record=False, squeeze_me=True)
-  bin_mod = get_relationship_models(bin_mod_mat)
+  if get_bin_mod:
+    print("loading binary model data...")
+    binary_path = data_path + "binary_models_struct.mat"
+    bin_mod_mat = sio.loadmat(binary_path, struct_as_record=False, squeeze_me=True)
+    bin_mod = get_relationship_models(bin_mod_mat)
+  else:
+    bin_mod = None
   
-  print("loading platt model data...")
-  platt_path = data_path + "platt_models_struct.mat"
-  platt_mod = sio.loadmat(platt_path, struct_as_record=False, squeeze_me=True)
+  if get_platt_mod:
+    print("loading platt model data...")
+    platt_path = data_path + "platt_models_struct.mat"
+    platt_mod = sio.loadmat(platt_path, struct_as_record=False, squeeze_me=True)
+  else:
+    platt_mod = None
   
   print("loading test queries...")
   query_path = data_path + "simple_graphs.mat"

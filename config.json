@@ -1,6 +1,5 @@
 {
-	"file_paths": 
-	{
+	"file_paths": {
         "output_path": "/home/watsonc/py_irsg_orig/output/",
         "image_path": "/home/watsonc/py_irsg_orig/sg_dataset/sg_test_images/",
 	    "mat_path": "/home/watsonc/py_irsg_orig/data/",
@@ -8,5 +7,30 @@
 		"csv_path": "/home/watsonc/py_irsg_orig/csv/",
 		"hdf_path": "/home/watsonc/py_irsg_orig/data/all_data.h5",
         "sg_path": "/home/watsonc/py_irsg_orig/sg_dataset/"
-	}
+	}, "csv_datasets": {
+        "default": {
+            "test": {
+                "obj_files": "obj_files",
+                "attr_files": "attr_files"
+            }
+        }, "psu": {
+            "train": {
+                "obj_files": "obj_files_full_train",
+                "attr_files": "attr_files_full_train",
+                "rel_files": "rel_files_full_train"
+            },
+            "val": {
+                "obj_files": "obj_files_full_val",
+                "attr_files": "attr_files_full_val",
+                "rel_files": "rel_files_full_val"
+            },
+            "test": {
+                
+            }
+        }, "psu-small": {
+            "obj_files": "obj_files_smol_val",
+            "attr_files": "attr_files_smol_val",
+            "rel_files": "rel_files_smol_val"
+        }
+    }
 }

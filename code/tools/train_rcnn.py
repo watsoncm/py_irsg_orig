@@ -4,6 +4,8 @@ import json
 import glob
 from collections import defaultdict
 
+from tqdm import tqdm
+
 from config import get_config_path
 import irsg_core.data_pull as dp
 
@@ -39,9 +41,15 @@ def convert_rcnn_data(input_path, output_path):
 
 if __name__ == '__main__':
     ifdata = dp.get_ifdata(use_csv=True, use_train=True)
-    obj_path = os.path.join(data_path, 'obj_rcnn_data')
-    obj_out_path = os.path.join(csv_path, 'obj_data_custom')
-    attr_path = os.path.join(data_path, 'attr_rcnn_data')
-    attr_out_path = os.path.join(csv_path, 'attr_data_custom')
-    convert_rcnn_data(obj_path, obj_out_path)
-    convert_rcnn_data(obj_path, attr_out_path)
+    in_paths = [os.path.join(data_path, name) for name in
+                ('obj_rcnn_train', 'obj_rcnn_val',
+                 'attr_rcnn_train', 'attr_rcnn_val',
+                 'obj_rcnn_train_smol', 'obj_rcnn_val_smol',
+                 'attr_rcnn_train_smol', 'attr_rcnn_val_smol')]
+    out_paths = [os.path.join(csv_path, name) for name in
+                 ('obj_files_train', 'obj_files_val',
+                  'attr_files_train', 'attr_files_val',
+                  'obj_files_train_smol', 'obj_files_val_smol',
+                  'attr_files_train_smol', 'attr_files_val_smol')]
+    for in_path, out_path in tqdm(zip(in_paths, out_paths)):
+        convert_rcnn_data(in_path, out_path)

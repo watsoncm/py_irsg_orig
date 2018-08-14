@@ -1,5 +1,3 @@
-import os
-import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -163,9 +161,10 @@ class ImageQueryData(object):
 
     @staticmethod
     def get_iou(bbox_a, bbox_b):
-        bbox_a_x, bbox_a_y, bbox_a_w, bbox_a_h = bbox_a
-        bbox_b_x, bbox_b_y, bbox_b_w, bbox_b_h = bbox_b
-
+        bbox_a_x, bbox_a_y, bbox_a_w, bbox_a_h = [float(value)
+                                                  for value in bbox_a]
+        bbox_b_x, bbox_b_y, bbox_b_w, bbox_b_h = [float(value)
+                                                  for value in bbox_b]
         # calculate (x, y, w, h)
         bbox_a_x1 = bbox_a_x
         bbox_a_x2 = bbox_a_x + bbox_a_w
@@ -269,11 +268,16 @@ class ImageQueryData(object):
         except KeyError:
             return None, None
 
-    def score_box_pair(self, subject_box, object_box):
+    @staticmethod
+    def score_box_pair(subject_box, object_box, weights, means,
+                       covariances, platt_a=1, platt_b=0):
         sub_center = (subject_box[0] + 0.5 * subject_box[2],
                       subject_box[1] + 0.5 * subject_box[3])
         obj_center = (object_box[0] + 0.5 * object_box[2],
                       object_box[1] + 0.5 * object_box[3])
+        if subject_box[2] == 0 or subject_box[3] == 0:
+            return 0.0, 0.0  # zero area objects are bad and should feel bad
+
         rel_center = ((sub_center[0] - obj_center[0]) / subject_box[2],
                       (sub_center[1] - obj_center[1]) / subject_box[3])
         rel_dims = (object_box[2] / subject_box[2],
@@ -281,25 +285,32 @@ class ImageQueryData(object):
         features = np.vstack((rel_center[0], rel_center[1],
                               rel_dims[0], rel_dims[1])).T
 
-        scores = ifc.gmm_pdf(features, self.pred_model.gmm_weights,
-                             self.pred_model.gmm_mu, self.pred_model.gmm_sigma)
+        scores = ifc.gmm_pdf(features, weights, means, covariances)
         eps = np.finfo(np.float).eps
         log_scores = np.log(eps + scores)
-        sig_scores = 1.0 / (1.0 + np.exp(self.pred_model.platt_a * log_scores +
-                                         self.pred_model.platt_b))
-        return scores[0], -np.log(sig_scores[0])
+        sig_scores = 1.0 / (1.0 + np.exp(platt_a * log_scores + platt_b))
+        return log_scores[0], -np.log(sig_scores[0])
 
     def get_pred_scores(self):
         model_sub_bbox = self.boxes[self.model_sub_bbox_id]
         model_obj_bbox = self.boxes[self.model_obj_bbox_id]
-        model_pred_scores = self.score_box_pair(model_sub_bbox, model_obj_bbox)
+        pred_params = (self.pred_model.gmm_weights,
+                       self.pred_model.gmm_mu,
+                       self.pred_model.gmm_sigma,
+                       self.pred_model.platt_a,
+                       self.pred_model.platt_b)
+        model_pred_scores = self.score_box_pair(model_sub_bbox,
+                                                model_obj_bbox,
+                                                *pred_params)
         if self.compute_gt:
             close_sub_bbox = self.boxes[self.close_sub_bbox_id]
             close_obj_bbox = self.boxes[self.close_obj_bbox_id]
             close_pred_scores = self.score_box_pair(close_sub_bbox,
-                                                    close_obj_bbox)
+                                                    close_obj_bbox,
+                                                    *pred_params)
             gt_pred_scores = self.score_box_pair(self.image_sub_bbox,
-                                                 self.image_obj_bbox)
+                                                 self.image_obj_bbox,
+                                                 *pred_params)
         else:
             close_pred_scores, gt_pred_scores = (None, None), (None, None)
         return model_pred_scores, close_pred_scores, gt_pred_scores

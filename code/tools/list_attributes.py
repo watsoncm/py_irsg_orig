@@ -18,7 +18,7 @@ def get_obj_attr_counts(if_data):
     attr_count = Counter()
     for image in if_data.vg_data:
         for triple in image.annotations.unary_triples:
-            attr_name = triple.text[2]
+            attr_name = triple.object
             attr_count[attr_name] += 1
         for obj in image.annotations.objects:
             obj_name = np.array(obj.names).reshape(-1)[0]
