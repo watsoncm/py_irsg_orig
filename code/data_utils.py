@@ -111,3 +111,10 @@ def get_text_parts(image_data, triple):
 def get_indices(path, split):
     with open(os.path.join(path, '{}.txt'.format(split))) as f:
         return [int(line) for line in f.read().splitlines()]
+
+
+def save_platt_data(text, path, platt_a, platt_b):
+    gmm_path = os.path.join(path, text)
+    platt_path = os.path.join(gmm_path, 'means.csv')
+    with open(platt_path, 'w') as f:
+        f.write('{},{}'.format(platt_a, platt_b))

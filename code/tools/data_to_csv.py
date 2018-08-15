@@ -5,6 +5,8 @@ import json
 import numpy as np
 from tqdm import tqdm
 
+import data_utils
+import gmm_utils
 import irsg_core.data_pull as dp
 from config import get_config_path
 
@@ -37,6 +39,30 @@ def transfer_scores(ifdata, root_path, is_attr=False):
                 os.mkdir(path)
             img_csv_path = os.path.join(path, csv_name)
             write_scores(img_csv_path, result)
+
+
+def transfer_rels(ifdata, root_path):
+    """Transfer GMM parameters into CSV."""
+    for name, model in ifdata.relationship_models.iteritems():
+        gmm_utils.save_gmm_data(name, root_path, model.gmm_weights,
+                                model.gmm_mu, model.gmm_sigma)
+
+
+def transfer_platt_models(ifdata, obj_path, attr_path, rel_path):
+    """Transfer Platt model coefficients for object, attribute, and relationship
+    scores into CSV."""
+    platt_data = ifdata.platt_models['platt_models'].s_models.serialization
+    for name, values in tqdm(zip(platt_data.keys, platt_data.values),
+                             desc='obj/attr platt'):
+        prefix, rest = name.split(':')
+        path = obj_path if prefix == 'obj' else attr_path
+        platt_a, platt_b = values[:2]
+        data_utils.save_platt_data(rest, path, platt_a, platt_b)
+    for name, model in tqdm(ifdata.relationship_models.iteritems(),
+                            total=len(ifdata.relationship_models),
+                            desc='rel platt'):
+        data_utils.save_platt_data(name, rel_path, model.platt_a,
+                                   model.platt_b)
 
 
 def transfer_class_to_idx(ifdata, path):
@@ -90,6 +116,7 @@ def generate_image_csvs(ifdata, root_path):
 
 
 def transfer_image_names(ifdata, csv_path):
+    """Convert image filenames into CSV files."""
     with open(csv_path, 'wb') as f:
         csv_writer = csv.writer(f)
         csv_writer.writerow(('image_index', 'filename'))
@@ -101,24 +128,27 @@ def transfer_image_names(ifdata, csv_path):
 def convert_all_to_csv(by_image=False):
     """Converts all Matlab files into corresponding CSV files."""
     ifdata = dp.get_ifdata()
+    root_path = os.path.join(csv_path, 'datasets_beta', 'stanford', 'test')
     if by_image:
         image_csv_path = os.path.join(csv_path, 'image_files')
         if not os.path.exists(image_csv_path):
             os.mkdir(image_csv_path)
         generate_image_csvs(ifdata, image_csv_path)
     else:
-        obj_path = os.path.join(csv_path, 'obj_files')
-        attr_path = os.path.join(csv_path, 'attr_files')
+        obj_path = os.path.join(root_path, 'obj_files')
+        attr_path = os.path.join(root_path, 'attr_files')
+        rel_path = os.path.join(root_path, 'rel_files')
         class_to_idx_path = os.path.join(csv_path, 'class_to_idx.csv')
         class_path = os.path.join(csv_path, 'classes.csv')
         image_path = os.path.join(csv_path, 'image_paths.csv')
-
-        for path in (obj_path, attr_path):
+        for path in (obj_path, attr_path, rel_path):
             if not os.path.exists(path):
-                os.mkdir(path)
+                os.makedirs(path)
 
         transfer_scores(ifdata, obj_path)
         transfer_scores(ifdata, attr_path, is_attr=True)
+        transfer_rels(ifdata, rel_path)
+        transfer_platt_models(ifdata, obj_path, attr_path, rel_path)
         transfer_class_to_idx(ifdata, class_to_idx_path)
         transfer_classes(ifdata, class_path)
         transfer_image_names(ifdata, image_path)

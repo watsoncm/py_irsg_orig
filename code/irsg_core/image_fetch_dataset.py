@@ -1,20 +1,15 @@
-import numpy as np
-import json
 import os.path
+from collections import namedtuple
+
+import numpy as np
 
 import image_fetch_utils as ifu
-from config import get_config_path
-
-with open(get_config_path()) as cfg_file:
-    cfg_data = json.read(cfg_file)
-    csv_datasets = cfg_data['csv_datasets']
+import gmm_utils
 
 
 class ImageFetchDataset(object):
-    def __init__(self, split, vg_data, potentials_data, platt_models,
+    def __init__(self, vg_data, potentials_data, platt_models,
                  relationship_models, base_image_path):
-        # TODO: implement logic to choose split (set vg_data to vg_data[...])
-        self.split = split
         self.vg_data = vg_data
         self.potentials_data = potentials_data
         self.platt_models = platt_models
@@ -40,47 +35,43 @@ class ImageFetchDataset(object):
             self.image_filename = self.base_image_path + os.path.basename(
                 self.vg_data[self.current_image_num].image_path)
 
-        if sg_query != self.current_sg_query:
+        if sg_query is not None or sg_query != self.current_sg_query:
             self.current_sg_query = sg_query
             self.per_object_attributes = ifu.get_object_attributes(
                 self.current_sg_query)
 
 
-# TODO: check if platt_models is okay to be None
 class CSVImageFetchDataset(ImageFetchDataset):
-    VALID_DATASETS = ('default', 'psu', 'psu-small')
-
-    def __init__(self, dataset, split, vg_data, platt_models,
-                 relationship_models, base_image_path, csv_path):
-        super(CSVImageFetchDataset, self).__init__(vg_data, None, platt_models,
-                                                   relationship_models,
+    def __init__(self, dataset, split, vg_data, base_image_path, csv_path):
+        super(CSVImageFetchDataset, self).__init__([], None, None, None,
                                                    base_image_path)
         self.dataset = dataset
-        if self.dataset not in self.VALID_DATASETS:
-            error_format = 'invalid dataset {}: valid values are {}'
-            valid_sets = ', '.join(self.VALID_DATASETS)
-            raise ValueError(error_format.format(self.dataset, valid_sets))
         self.split = split
         self.csv_path = csv_path
         self.potentials_data = {}
 
+        # get paths
+        self.dataset_path = os.path.join(csv_path, 'datasets', dataset)
+        self.split_path = os.path.join(self.dataset_path, split)
+        self.obj_path = os.path.join(self.split_path, 'obj_files')
+        self.attr_path = os.path.join(self.split_path, 'attr_files')
+        self.rel_path = os.path.join(self.split_path, 'rel_files')
+
         # get class data
-        classes = np.loadtxt(os.path.join(csv_path, 'classes.csv'), dtype='O',
-                             delimiter=',')
-        class_to_idx = np.loadtxt(os.path.join(csv_path, 'class_to_idx.csv'),
-                                  dtype=[('class', 'O'), ('idx', int)],
-                                  delimiter=',')
-        class_to_idx = dict(zip(class_to_idx['class'], class_to_idx['idx']))
-        self.potentials_data['classes'] = classes.reshape(-1)
+        classes, class_to_idx = self.read_csv_class_data()
+        self.potentials_data['classes'] = classes
         self.potentials_data['class_to_idx'] = class_to_idx
+
+        # get vg_data
+        self.vg_data = self.load_vg_data(vg_data)
 
         # get box and score data
         self.n_images = self.vg_data.shape[0]
-        self.n_objs = len(os.listdir(os.path.join(csv_path, 'obj_files')))
-        self.n_attrs = len(os.listdir(os.path.join(csv_path, 'attr_files')))
-        empty_array = [None for _ in range(self.n_images)]
-        self.potentials_data['boxes'] = np.array(empty_array)
-        self.potentials_data['scores'] = np.array(empty_array)
+        self.n_objs = len(os.listdir(self.obj_path))
+        self.n_attrs = len(os.listdir(self.attr_path))
+        empty_pots = [None for _ in range(self.n_images)]
+        self.potentials_data['boxes'] = np.array(empty_pots)
+        self.potentials_data['scores'] = np.array(empty_pots)
         self.loaded_cache = []
 
         # get attribute and object lists
@@ -89,14 +80,79 @@ class CSVImageFetchDataset(ImageFetchDataset):
         self.all_attrs = [attr[4:] for attr in class_to_idx.keys()
                           if 'atr' in attr]
 
-        if self.dataset != 'default':
-            self.relationship_models = self.read_csv_rel_models()
+        # get relationship and platt models
+        self.relationship_models = self.read_csv_rel_models()
+        if self.split == 'train':
+            self.platt_models = None
+        else:
             self.platt_models = self.read_csv_platt_models()
+
+    def load_vg_data(self, vg_data):
+        with open(os.path.join(self.split_path, 'index.txt')) as f:
+            indices = [int(line) for line in f.read().splitlines()]
+        if self.split == 'test':
+            vg_key = 'vg_data_test'
+            indices = [index - len(vg_data['vg_data_train'])
+                       for index in indices]
+        else:
+            vg_key = 'vg_data_train'
+        return vg_data[vg_key][indices]
+
+    def read_csv_class_data(self):
+        classes = np.loadtxt(os.path.join(self.dataset_path, 'classes.csv'),
+                             dtype='O', delimiter=',')
+        class_to_idx = np.loadtxt(os.path.join(self.dataset_path,
+                                               'class_to_idx.csv'),
+                                  dtype=[('class', 'O'), ('idx', int)],
+                                  delimiter=',')
+        class_to_idx = dict(zip(class_to_idx['class'], class_to_idx['idx']))
+        return classes.reshape(-1), class_to_idx
+
+    def read_csv_rel_models(self):
+        args = ['gmm_weights', 'gmm_mu', 'gmm_sigma']
+        if self.split != 'train':
+            args += ['platt_a', 'platt_b']
+        GMM = namedtuple('GMM', args)
+        rel_models = {}
+        for model_name in os.listdir(self.rel_path):
+            if self.split == 'train':
+                gmm_data = gmm_utils.load_gmm_data(model_name, self.rel_path,
+                                                   load_platt=False)
+                gmm_weights, gmm_mu, gmm_sigma = gmm_data
+                rel_models[model_name] = GMM(gmm_weights=gmm_weights,
+                                             gmm_mu=gmm_mu,
+                                             gmm_sigma=gmm_sigma)
+            else:
+                gmm_data = gmm_utils.load_gmm_data(model_name, self.rel_path,
+                                                   load_platt=True)
+                gmm_weights, gmm_mu, gmm_sigma, platt_a, platt_b = gmm_data
+                rel_models[model_name] = GMM(gmm_weights=gmm_weights,
+                                             gmm_mu=gmm_mu,
+                                             gmm_sigma=gmm_sigma,
+                                             platt_a=platt_a, platt_b=platt_b)
+        return rel_models
+
+    def read_csv_platt_models(self):
+        platt_data = {}
+        PlattModels = namedtuple('PlattModels', ['s_models'])
+        ModelDict = namedtuple('ModelList', ['serialization'])
+        Serialization = namedtuple('Serialization', ['keys', 'values'])
+        for path, prefix in ((self.attr_path, 'atr'), (self.obj_path, 'obj')):
+            for name in os.listdir(path):
+                with open(os.path.join(path, name, 'platt.csv')) as f:
+                    platt_a, platt_b = [float(v) for v in f.read().split(',')]
+                platt_array = np.array([platt_a, platt_b, np.nan, np.nan])
+                platt_data['{}:{}'.format(prefix, name)] = platt_array
+
+        keys, values = zip(*platt_data.items())
+        serialization = Serialization(keys=keys, values=values)
+        s_models = ModelDict(serialization=serialization)
+        return {'platt_models': PlattModels(s_models=s_models)}
 
     def load_data(self, name, is_obj, test_image_num):
         csv_name = 'irsg_{}.csv'.format(test_image_num)
-        dir_name = 'obj_files' if is_obj else 'attr_files'
-        csv_file_path = os.path.join(self.csv_path, dir_name, name, csv_name)
+        obj_attr_path = self.obj_path if is_obj else self.attr_path
+        csv_file_path = os.path.join(obj_attr_path, name, csv_name)
 
         # load relevant data and assign boxes
         data_array = np.loadtxt(csv_file_path, delimiter=',')
@@ -147,7 +203,7 @@ class CSVImageFetchDataset(ImageFetchDataset):
             self.image_filename = self.base_image_path + os.path.basename(
                 self.vg_data[self.current_image_num].image_path)
 
-        if sg_query != self.current_sg_query:
+        if sg_query is not None or sg_query != self.current_sg_query:
             self.current_sg_query = sg_query
             self.per_object_attributes = ifu.get_object_attributes(
                 self.current_sg_query)

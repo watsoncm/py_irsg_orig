@@ -99,8 +99,8 @@ def generate_queries_from_file(path):
 
 if __name__ == '__main__':
     _, _, _, _, queries, if_data = dp.get_all_data(use_csv=True)
-    path = os.path.join(data_path, 'queries.txt')
-    queries = generate_queries_from_file(path)
-    generate_all_query_plots(queries, if_data, condition_gmm=True,
-                             visualize_gmm=False)
-    # generate_test_plot(queries, if_data)
+    # path = os.path.join(data_path, 'queries.txt')
+    # queries = generate_queries_from_file(path)
+    # generate_all_query_plots(queries, if_data, condition_gmm=True,
+    #                          visualize_gmm=False)
+    generate_test_plot(queries, if_data)

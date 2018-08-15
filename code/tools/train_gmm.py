@@ -7,6 +7,7 @@ from sklearn import mixture
 from tqdm import tqdm
 
 import data_utils
+import gmm_utils
 from config import get_config_path
 import irsg_core.data_pull as dp
 
@@ -71,20 +72,6 @@ def train_gmm(bbox_pairs):
     return gmm.weights_, gmm.means_, gmm.covariances_
 
 
-def save_gmm_data(text, path, weights, means, covariances):
-    gmm_path = os.path.join(path, text)
-    if not os.path.exists(gmm_path):
-        os.makedirs(gmm_path)
-    weights_path = os.path.join(gmm_path, 'weights.csv')
-    means_path = os.path.join(gmm_path, 'means.csv')
-    covar_paths = [os.path.join(gmm_path, 'covar{}.csv'.format(i))
-                   for i in range(len(covariances))]
-    np.savetxt(weights_path, weights)
-    np.savetxt(means_path, means)
-    for covar_path, covariance in zip(covar_paths, covariances):
-        np.savetxt(covar_path, covariance)
-
-
 if __name__ == '__main__':
     ifdata = dp.get_ifdata(use_csv=True, use_train=True)
     with open(os.path.join()) as f:
@@ -101,4 +88,4 @@ if __name__ == '__main__':
         rel_dict = get_binary_model_data(ifdata, indices, objs=objs)
         for text, bbox_pairs in rel_dict.iteritems():
             gmm_data = train_gmm(bbox_pairs)
-            save_gmm_data(text, output_path, *gmm_data)
+            gmm_utils.save_gmm_data(text, output_path, *gmm_data)

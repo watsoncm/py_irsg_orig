@@ -12,6 +12,8 @@ import irsg_core.data_pull as dp
 
 def plot_heatmap(box_map, sub_bbox, obj_bbox, image_index, sub_index,
                  obj_index, model_name, vg_data, ifdata, save_path=None):
+    """Plots a simple heatmap given an array of heat values, bounding
+    boxes for subject and object, the index of the image, etc."""
     fig, ax = plt.subplots(1)
     plt.xticks([])
     plt.yticks([])
@@ -52,6 +54,7 @@ def plot_heatmap(box_map, sub_bbox, obj_bbox, image_index, sub_index,
 
 def get_heatmap(gmm, image_index, sub_index, obj_index, vg_data,
                 n_samples=1000):
+    """Generates a heatmap from a GMM and a set of indices."""
     image_data = vg_data[image_index]
     samples = gmm.sample(n_samples)[0]
     image_width, image_height = image_data.image_width, image_data.image_height
@@ -78,6 +81,7 @@ def get_heatmap(gmm, image_index, sub_index, obj_index, vg_data,
 
 def visualize_gmm(model_name, image_index, sub_index, obj_index, vg_data,
                   bin_mod, ifdata, save_path=None):
+    """Fully visualizes a GMM given a model name and a series of indices."""
     gmm_params = bin_mod[model_name]
     gmm = gmm_utils.get_gmm(gmm_params.gmm_mu, gmm_params.gmm_sigma,
                             gmm_params.gmm_weights)

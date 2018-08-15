@@ -46,10 +46,10 @@ def count_to_threshold_list(count, thresh):
 
 if __name__ == '__main__':
     if_data_test = dp.get_ifdata(use_csv=True)
-    if_data_train = dp.get_ifdata(use_csv=True, use_train=True)
+    if_data_train = dp.get_ifdata(use_csv=True, split='train')
     test_obj_count, test_attr_count = get_obj_attr_counts(if_data_test)
     train_obj_count, train_attr_count = get_obj_attr_counts(if_data_train)
     train_objs = count_to_threshold_list(train_obj_count, 50)
     train_attrs = count_to_threshold_list(train_attr_count, 50)
-    write_obj_attr_counts(train_obj_count, train_attr_count, train_objs,
+    write_obj_attr_counts(test_obj_count, test_attr_count, train_objs,
                           train_attrs, csv_path)

@@ -10,6 +10,7 @@ from itertools import product
 from sklearn import linear_model
 
 import data_utils
+import gmm_utils
 import irsg_core.data_pull as dp
 from image_query_data import ImageQueryData
 from config import get_config_path
@@ -61,20 +62,9 @@ def get_rcnn_data(path, ifdata, image_indices, desc=None):
 def get_gmm_data(path, ifdata, image_indices, negs_per_image=10, desc=None):
     data = {}
     for rel_name in tqdm(os.listdir(path), desc=desc):
-        rel_path = os.path.join(path, rel_name)
         scores = []
         gts = []
-        weights = np.loadtxt(os.path.join(rel_path, 'weights.csv'))
-        means = np.loadtxt(os.path.join(rel_path, 'means.csv'))
-        covar_dict = {}
-        for data_name in os.listdir(rel_path):
-            if 'covar' in data_name:
-                covar_index = int(re.findall('\d+', data_name)[0])
-                covar_path = os.path.join(rel_path, data_name)
-                covar_dict[covar_index] = np.loadtxt(covar_path)
-        covars = np.array([covar_dict[index]
-                           for index in range(len(covar_dict))])
-        gmm_params = (weights, means, covars)
+        gmm_params = gmm_utils.load_gmm_data(path, rel_name)
         for image_index in tqdm(image_indices, desc='images'):
             image_data = ifdata.vg_data[image_index]
             gt_relations = []
@@ -117,9 +107,7 @@ def save_platt_params(data, path):
             coef, intercept = lr.coef_[0][0], lr.intercept_[0]
         except ValueError:
             coef, intercept = 0.0, float(gts[0])
-        platt_path = os.path.join(path, name, 'platt.csv')
-        with open(platt_path, 'w') as f:
-            f.write('{},{}'.format(coef, intercept))
+        data_utils.save_platt_data(name, path, coef, intercept)
 
 
 if __name__ == '__main__':
