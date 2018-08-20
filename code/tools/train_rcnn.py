@@ -18,6 +18,7 @@ with open(get_config_path()) as f:
 
 
 def convert_rcnn_data(input_path, output_path):
+    """Convert RCNN data from py-faster-rcnn format to CSV."""
     bbox_dict = defaultdict(list)
     for data_file in tqdm(glob.glob(os.path.join(input_path, '*.csv')),
                           desc='files'):

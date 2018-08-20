@@ -16,8 +16,6 @@ from image_query_data import ImageQueryData
 from config import get_config_path
 
 
-# TODO: all rel platt weights are zero, fix!
-
 NUM_NEGS = 20
 
 with open(get_config_path()) as f:
@@ -28,6 +26,7 @@ with open(get_config_path()) as f:
 
 
 def test_bbox_class(image_index, bbox, class_name, ifdata):
+    """Test if a bounding box is a true positive for a given class."""
     objects = ifdata.vg_data[image_index].annotations.objects
     for obj in objects:
         obj_name = np.array(obj.names).reshape(-1)[0]
@@ -39,6 +38,7 @@ def test_bbox_class(image_index, bbox, class_name, ifdata):
 
 
 def get_rcnn_data(path, ifdata, image_indices, desc=None):
+    """Get all RCNN data from CSV files."""
     data = {}
     for class_name in tqdm(os.listdir(path), desc=desc):
         class_path = os.path.join(path, class_name)
@@ -63,6 +63,7 @@ def get_rcnn_data(path, ifdata, image_indices, desc=None):
 
 
 def get_gmm_data(path, ifdata, image_indices, negs_per_image=10, desc=None):
+    """Get all GMM data from CSV files."""
     data = {}
     for rel_name in tqdm(os.listdir(path), desc=desc):
         scores = []
@@ -102,6 +103,7 @@ def get_gmm_data(path, ifdata, image_indices, negs_per_image=10, desc=None):
 
 
 def save_platt_params(data, path):
+    """Save the given Platt scaling parameters."""
     for name, (scores, gts) in data.iteritems():
         lr = linear_model.LogisticRegression()
         score_array, gt_array = np.array(scores).reshape(-1, 1), np.array(gts)

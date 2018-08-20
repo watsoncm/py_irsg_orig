@@ -11,6 +11,7 @@ with open(get_config_path()) as f:
 
 
 def save_query_texts(queries, if_data, path):
+    """Save the texts of the given queries to a file."""
     with open(path, 'w') as f:
         for query_index, query in enumerate(queries):
             iqd = query_viz.ImageQueryData(query, query_index, 0, if_data)

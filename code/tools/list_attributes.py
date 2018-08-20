@@ -14,6 +14,8 @@ with open(get_config_path()) as f:
 
 
 def get_obj_attr_counts(if_data):
+    """Get counts of each object and attribute in the supplied
+    ImageFetchData object."""
     obj_count = Counter()
     attr_count = Counter()
     for image in if_data.vg_data:
@@ -28,6 +30,7 @@ def get_obj_attr_counts(if_data):
 
 def write_obj_attr_counts(obj_count, attr_count, train_objs,
                           train_attrs, path):
+    """Record object and attribute counts in CSV format."""
     obj_path = os.path.join(path, 'obj_counts.csv')
     attr_path = os.path.join(path, 'attr_counts.csv')
     for csv_path, count, train_vals in ((obj_path, obj_count, train_objs),
@@ -40,6 +43,7 @@ def write_obj_attr_counts(obj_count, attr_count, train_objs,
 
 
 def count_to_threshold_list(count, thresh):
+    """Convert a Counter object into a thresholded list of items."""
     return [obj for obj, obj_count in count.most_common()
             if obj_count >= thresh]
 

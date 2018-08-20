@@ -19,6 +19,7 @@ with open(get_config_path()) as f:
 
 
 def generate_tp_neg(tp_data_pos, n_queries, n_images, negs_per_query):
+    """Generate a series of negative examples for training the GMMs."""
     tp_data_neg = []
     for query_index in range(n_queries):
         image_indexes = [index for index in range(n_images)
@@ -30,6 +31,7 @@ def generate_tp_neg(tp_data_pos, n_queries, n_images, negs_per_query):
 
 def generate_all_query_plots(queries, if_data, condition_gmm=False,
                              visualize_gmm=False, negs_per_query=20):
+    """Generate plots for each given query."""
     tp_data_pos = ifu.get_partial_scene_matches(if_data.vg_data, queries)
     tp_data_neg = generate_tp_neg(tp_data_pos, len(queries),
                                   len(if_data.vg_data), negs_per_query)
@@ -76,12 +78,14 @@ def generate_all_query_plots(queries, if_data, condition_gmm=False,
 
 
 def generate_test_plot(queries, if_data):
+    """Generate a simple test plot to see if the program works."""
     iqd = ImageQueryData(queries['simple_graphs'][4], 4, 38, if_data)
     iqd.compute_plot_data(condition_gmm=True, visualize_gmm=True)
     iqd.generate_plot()
 
 
 def generate_queries_from_file(path):
+    """Read queries from a specially-formatted file."""
     queries = []
     gen_dict = {'(sro)': ifq.gen_sro,
                 '(srao)': ifq.gen_srao,

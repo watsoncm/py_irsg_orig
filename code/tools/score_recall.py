@@ -15,6 +15,7 @@ with open(get_config_path()) as f:
 
 
 def recall_check(queries, if_data, false_negs):
+    """Compute recalls for a given set of queries and plot."""
     tp_simple = ifu.get_partial_scene_matches(if_data.vg_data, queries)
     for query_index, image_index in false_negs:
         tp_simple[query_index].append(image_index)

@@ -24,6 +24,7 @@ with open(get_config_path()) as f:
 
 def run_cross_val_test(if_data, queries, path, index,
                        obj_weight, attr_weight, pred_weight):
+    """Run a single test on the validation set."""
     iqd_params = {'obj_weight': obj_weight,
                   'attr_weight': attr_weight,
                   'pred_weight': pred_weight}
@@ -41,6 +42,7 @@ def run_cross_val_test(if_data, queries, path, index,
 
 
 def cross_validate_simple(if_data, queries, k_val, num_xvals):
+    """Do simple cross-validation over triples of IRSG weights."""
     query_format = 'query_energies_xval_{}/'
     result_format = ('obj_weight: {}\nattr_weight: {}\n'
                      'pred_weight: {}\nR@{}: {}')
@@ -69,6 +71,8 @@ def cross_validate_simple(if_data, queries, k_val, num_xvals):
 
 
 def cross_validate_tune_rcnns(if_data, k_val, iou_thresh=0.5):
+    """Determine weights for each RCNN class given performance on the
+    validation set."""
     # query_format = 'query_iou_recalls_{}/'
     gts = defaultdict(list)
     preds = defaultdict(list)

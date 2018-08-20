@@ -19,6 +19,7 @@ with open(get_config_path()) as f:
 
 
 def get_binary_model_data(ifdata, indices, rels=None):
+    """Read data for relationship model parameters from CSV files."""
     all_models = defaultdict(list)
     for index in indices:
         image_data = ifdata.vg_data[index]
@@ -45,6 +46,7 @@ def get_binary_model_data(ifdata, indices, rels=None):
 
 
 def train_gmm(bbox_pairs):
+    """Train a GMM on a series of bounding box pairs."""
     subs, objs = zip(*bbox_pairs)
     sub_x, sub_y, sub_w, sub_h = zip(*[(sub.x, sub.y, sub.w, sub.h)
                                        for sub in subs])
@@ -71,6 +73,7 @@ def train_gmm(bbox_pairs):
 
 
 def parse_queries(query_path):
+    """Read queries from a file."""
     rels = []
     with open(query_path) as f:
         for line in f.read().splitlines():
