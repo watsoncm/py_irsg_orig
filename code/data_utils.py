@@ -39,6 +39,32 @@ def generate_energy_data(queries, path, if_data, use_geometric=False,
                 csv_writer.writerow((image_id, energy))
 
 
+def generate_iou_data(queries, path, if_data, use_geometric=False,
+                      iqd_params=None):
+    for query_id, query in tqdm(list(enumerate(queries)),
+                                total=len(queries)):
+        object_id_list = []
+        iou_list = []
+        for image_id in tqdm(range(len(if_data.vg_data))):
+            if iqd_params is None:
+                iqd_params = {}
+            iqd = ImageQueryData(query, query_id, image_id,
+                                 if_data, compute_gt=False,
+                                 **iqd_params)
+            iqd.compute_potential_data(use_relationships=not use_geometric)
+            object_id_list.extend([iqd.model_sub_bbox_idx,
+                                   iqd.model_obj_bbox_idx])
+            iou_list.extend([iqd.sub_iou, iqd.obj_iou])
+        iou_name = 'q{:03d}_iou_values.csv'.format(query_id)
+        iou_path = os.path.join(path, iou_name)
+        with open(iou_path, 'wb') as f:
+            csv_writer = csv.writer(f)
+            csv_writer.writerow(('image_ix', 'obj_ix', 'iou'))
+            for image_id, (object_id, iou) in enumerate(
+                    zip(object_id_list, iou_list)):
+                csv_writer.writerow((image_id, object_id, iou))
+
+
 def get_r_at_k(base_dir, gt_map, n_images, file_suffix='_energy_values'):
     k_count = np.zeros(n_images)
     n_queries = len(gt_map)
@@ -92,6 +118,47 @@ def get_recall_values(data, ground_truth_map, n_images, show_plot=False,
     return all_values
 
 
+def get_iou_recall_values(data, ground_truth_map, n_images, show_plot=False,
+                          save_path=None, do_holdout=False, y_limit=0.6):
+    gen_plot = show_plot or save_path is not None
+    if gen_plot:
+        plot_handles = []
+        plt.figure(1)
+        plt.grid(True)
+
+    all_values = []
+    for base_dir, label in data:
+        for index in range(len(ground_truth_map)):
+            csv_name = 'q{:03d}_iou_values.csv'.format(index)
+            csv_path = os.path.join(base_dir, csv_name)
+            if not os.path.isfile(csv_path):
+                continue
+            energies = np.genfromtxt(csv_path, delimiter=',', skip_header=1)
+            obj_ious = energies[:, 1]
+            threshs = np.linspace(0.05, 0.5, num=50)
+            recalls = [sum([iou > thresh for iou in obj_ious]) /
+                       float(len(obj_ious)) for thresh in threshs]
+            all_values.append(zip(threshs, recalls))
+            if gen_plot:
+                plot_handle = plt.plot(threshs, recalls, label=label)[0]
+                plot_handles.append(plot_handle)
+
+    if gen_plot:
+        plt.xlabel('IOU threshold')
+        plt.ylabel('Object recall')
+        plt.legend(handles=plot_handles, loc=1)
+        plt.xlim([0.05, 0.5])
+        plt.gca().invert_xaxis()
+        if y_limit > 0:
+            plt.ylim([0, y_limit])
+
+    if show_plot:
+        plt.show()
+    if save_path is not None:
+        plt.savefig(save_path)
+    return all_values
+
+
 def get_false_negs(path):
     with open(path) as f:
         csv_reader = csv.reader(f)
@@ -115,6 +182,6 @@ def get_indices(path, split):
 
 def save_platt_data(text, path, platt_a, platt_b):
     gmm_path = os.path.join(path, text)
-    platt_path = os.path.join(gmm_path, 'means.csv')
+    platt_path = os.path.join(gmm_path, 'platt.csv')
     with open(platt_path, 'w') as f:
         f.write('{},{}'.format(platt_a, platt_b))

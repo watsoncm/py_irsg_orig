@@ -1,10 +1,16 @@
-import os.path
+import os
+import json
 from collections import namedtuple
 
 import numpy as np
 
 import image_fetch_utils as ifu
 import gmm_utils
+from config import get_config_path
+
+with open(get_config_path()) as f:
+    cfg_data = json.load(f)
+    csv_path = cfg_data['file_paths']['csv_path']
 
 
 class ImageFetchDataset(object):
@@ -23,9 +29,9 @@ class ImageFetchDataset(object):
         self.image_filename = ""
         self.current_sg_query = None
 
-    def configure(self, test_image_num, sg_query):
-        if test_image_num != self.current_image_num:
-            self.current_image_num = test_image_num
+    def configure(self, image_index, sg_query):
+        if image_index != self.current_image_num:
+            self.current_image_num = image_index
             self.object_detections = ifu.get_object_detections(
                 self.current_image_num, self.potentials_data,
                 self.platt_models)
@@ -92,17 +98,14 @@ class CSVImageFetchDataset(ImageFetchDataset):
             indices = [int(line) for line in f.read().splitlines()]
         if self.split == 'test':
             vg_key = 'vg_data_test'
-            indices = [index - len(vg_data['vg_data_train'])
-                       for index in indices]
         else:
             vg_key = 'vg_data_train'
         return vg_data[vg_key][indices]
 
     def read_csv_class_data(self):
-        classes = np.loadtxt(os.path.join(self.dataset_path, 'classes.csv'),
+        classes = np.loadtxt(os.path.join(csv_path, 'classes.csv'),
                              dtype='O', delimiter=',')
-        class_to_idx = np.loadtxt(os.path.join(self.dataset_path,
-                                               'class_to_idx.csv'),
+        class_to_idx = np.loadtxt(os.path.join(csv_path, 'class_to_idx.csv'),
                                   dtype=[('class', 'O'), ('idx', int)],
                                   delimiter=',')
         class_to_idx = dict(zip(class_to_idx['class'], class_to_idx['idx']))
@@ -149,26 +152,26 @@ class CSVImageFetchDataset(ImageFetchDataset):
         s_models = ModelDict(serialization=serialization)
         return {'platt_models': PlattModels(s_models=s_models)}
 
-    def load_data(self, name, is_obj, test_image_num):
-        csv_name = 'irsg_{}.csv'.format(test_image_num)
+    def load_data(self, name, is_obj, image_index):
+        csv_name = 'irsg_{}.csv'.format(image_index)
         obj_attr_path = self.obj_path if is_obj else self.attr_path
         csv_file_path = os.path.join(obj_attr_path, name, csv_name)
 
         # load relevant data and assign boxes
         data_array = np.loadtxt(csv_file_path, delimiter=',')
-        self.potentials_data['boxes'][test_image_num] = data_array[:, :4]
+        self.potentials_data['boxes'][image_index] = data_array[:, :4]
 
         # create score array if necessary
-        if self.potentials_data['scores'][test_image_num] is None:
+        if self.potentials_data['scores'][image_index] is None:
             scores_shape = (data_array.shape[0], self.n_objs + self.n_attrs)
-            self.potentials_data['scores'][test_image_num] = np.zeros(
+            self.potentials_data['scores'][image_index] = np.zeros(
                 scores_shape)
         full_name = ('obj:' if is_obj else 'atr:') + name
         score_idx = self.potentials_data['class_to_idx'][full_name] - 1
-        image_scores = self.potentials_data['scores'][test_image_num]
+        image_scores = self.potentials_data['scores'][image_index]
         image_scores[:, score_idx] = data_array[:, 4]
 
-    def load_relevant_data(self, test_image_num, sg_query, load_all=False):
+    def load_relevant_data(self, image_index, sg_query, load_all=False):
         if sg_query is not None or load_all:
             obj_names = (self.all_objs if load_all else
                          [np.array(obj.names).reshape(-1)[0]
@@ -177,29 +180,30 @@ class CSVImageFetchDataset(ImageFetchDataset):
                           [attr_name for _, attr_name
                            in ifu.get_object_attributes(sg_query)])
             for obj in obj_names:
-                if (obj, test_image_num) not in self.loaded_cache:
+                if (obj, image_index) not in self.loaded_cache:
                     if ('obj:{}'.format(obj) in
                             self.potentials_data['classes'] or load_all):
-                        self.load_data(obj, True, test_image_num)
-                        self.loaded_cache.append((obj, test_image_num))
+                        self.load_data(obj, True, image_index)
+                        self.loaded_cache.append((obj, image_index))
             for attr in attr_names:
-                if (attr, test_image_num) not in self.loaded_cache:
+                if (attr, image_index) not in self.loaded_cache:
                     if ('atr:{}'.format(attr) in
                             self.potentials_data['classes'] or load_all):
-                        self.load_data(attr, False, test_image_num)
-                        self.loaded_cache.append((attr, test_image_num))
+                        self.load_data(attr, False, image_index)
+                        self.loaded_cache.append((attr, image_index))
 
-    def configure(self, test_image_num, sg_query, load_all=False):
-        if test_image_num != self.current_image_num:
-            self.current_image_num = test_image_num
-            self.load_relevant_data(test_image_num, sg_query,
+    def configure(self, image_index, sg_query, load_all=False):
+        if image_index != self.current_image_num:
+            self.current_image_num = image_index
+            self.load_relevant_data(image_index, sg_query,
                                     load_all=load_all)
-            self.object_detections = ifu.get_object_detections(
-                self.current_image_num, self.potentials_data,
-                self.platt_models, use_csv=True)
-            self.attribute_detections = ifu.get_attribute_detections(
-                self.current_image_num, self.potentials_data,
-                self.platt_models, use_csv=True)
+            if sg_query is not None or load_all:
+                self.object_detections = ifu.get_object_detections(
+                    self.current_image_num, self.potentials_data,
+                    self.platt_models, use_csv=True)
+                self.attribute_detections = ifu.get_attribute_detections(
+                    self.current_image_num, self.potentials_data,
+                    self.platt_models, use_csv=True)
             self.image_filename = self.base_image_path + os.path.basename(
                 self.vg_data[self.current_image_num].image_path)
 

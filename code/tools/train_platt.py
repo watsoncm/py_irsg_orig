@@ -15,6 +15,9 @@ import irsg_core.data_pull as dp
 from image_query_data import ImageQueryData
 from config import get_config_path
 
+
+# TODO: all rel platt weights are zero, fix!
+
 NUM_NEGS = 20
 
 with open(get_config_path()) as f:
@@ -64,8 +67,8 @@ def get_gmm_data(path, ifdata, image_indices, negs_per_image=10, desc=None):
     for rel_name in tqdm(os.listdir(path), desc=desc):
         scores = []
         gts = []
-        gmm_params = gmm_utils.load_gmm_data(path, rel_name)
-        for image_index in tqdm(image_indices, desc='images'):
+        gmm_params = gmm_utils.load_gmm_data(rel_name, path)
+        for image_index in tqdm(image_indices, desc='images'):  # TODO: REM
             image_data = ifdata.vg_data[image_index]
             gt_relations = []
             for triple in image_data.annotations.binary_triples:
@@ -107,25 +110,32 @@ def save_platt_params(data, path):
             coef, intercept = lr.coef_[0][0], lr.intercept_[0]
         except ValueError:
             coef, intercept = 0.0, float(gts[0])
-        data_utils.save_platt_data(name, path, coef, intercept)
+        try:
+            data_utils.save_platt_data(name, path, coef, intercept)
+        except IOError:
+            pass  # if the folder's not there, we don't need the rel anyway
 
 
 if __name__ == '__main__':
-    ifdata = dp.get_ifdata(use_csv=True, use_train=True)
+    ifdata = dp.get_ifdata(use_csv=True, split='train')
     indices = data_utils.get_indices(data_path, 'train')
 
-    obj_train_path = os.path.join(csv_path, 'obj_files_train')
-    attr_train_path = os.path.join(csv_path, 'attr_files_train')
-    rel_train_path = os.path.join(csv_path, 'rel_files_train')
-    obj_val_path = os.path.join(csv_path, 'obj_files_val')
-    attr_val_path = os.path.join(csv_path, 'attr_files_val')
-    rel_val_path = os.path.join(csv_path, 'rel_files_val')
+    psu_path = os.path.join(csv_path, 'datasets', 'psu')
+    psu_small_path = os.path.join(csv_path, 'datasets', 'psu-small')
+    for path in (psu_path, psu_small_path):
+        obj_train_path = os.path.join(path, 'train', 'obj_files')
+        obj_val_path = os.path.join(path, 'val', 'obj_files')
+        attr_train_path = os.path.join(path, 'train', 'attr_files')
+        attr_val_path = os.path.join(path, 'val', 'attr_files')
+        rel_train_path = os.path.join(path, 'train', 'rel_files')
+        rel_val_path = os.path.join(path, 'val', 'rel_files')
 
-    obj_data = get_rcnn_data(obj_train_path, ifdata, indices, desc='objs')
-    save_platt_params(obj_data, obj_val_path)
-
-    attr_data = get_rcnn_data(attr_train_path, ifdata, indices, desc='attrs')
-    save_platt_params(attr_data, attr_val_path)
-
-    rel_data = get_gmm_data(rel_train_path, ifdata, indices, desc='rels')
-    save_platt_params(rel_data, rel_val_path)
+        # obj_data = get_rcnn_data(obj_train_path, ifdata, indices,
+        #                          desc='objs')
+        # attr_data = get_rcnn_data(attr_train_path, ifdata, indices,
+        #                           desc='attrs')
+        rel_data = get_gmm_data(rel_train_path, ifdata, indices,
+                                desc='rels')
+        # save_platt_params(attr_data, attr_val_path)
+        # save_platt_params(obj_data, obj_val_path)
+        save_platt_params(rel_data, rel_val_path)

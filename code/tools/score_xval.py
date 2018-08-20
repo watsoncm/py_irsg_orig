@@ -9,6 +9,8 @@ import data_utils
 import irsg_core.data_pull as dp
 import irsg_core.image_fetch_utils as ifu
 from config import get_config_path
+from image_query_data import ImageQueryData
+from collections import defaultdict
 
 NUM_XVALS = 5
 K = 10
@@ -38,7 +40,7 @@ def run_cross_val_test(if_data, queries, path, index,
     return recalls
 
 
-def cross_validate(if_data, queries, k_val, num_xvals):
+def cross_validate_simple(if_data, queries, k_val, num_xvals):
     query_format = 'query_energies_xval_{}/'
     result_format = ('obj_weight: {}\nattr_weight: {}\n'
                      'pred_weight: {}\nR@{}: {}')
@@ -66,8 +68,31 @@ def cross_validate(if_data, queries, k_val, num_xvals):
         f.write(results[np.argmax(recalls_at_k)])
 
 
+def cross_validate_tune_rcnns(if_data, k_val, iou_thresh=0.5):
+    # query_format = 'query_iou_recalls_{}/'
+    gts = defaultdict(list)
+    preds = defaultdict(list)
+    for image_id in tqdm(range(len(if_data.vg_data)), desc='images'):
+        if_data.configure(image_id, None, load_all=True)
+        image_data = if_data.vg_data[image_id].annotations
+        for name, values in tqdm(if_data.object_detections.iteritems(),
+                                 total=len(if_data.object_detections),
+                                 desc='dets'):
+            gt_bboxes = []
+            for obj in image_data.objects:
+                if ImageQueryData.make_array(obj.names)[0] == name:
+                    gt_bboxes.append(ImageQueryData.make_bbox(obj.bbox))
+            for value in values:
+                ious = [ImageQueryData.get_iou(value[:4], gt_bboxes)]
+                gts[name].append(any([iou >= iou_thresh for iou in ious]))
+                preds[name].append(value[4])
+
+    import pdb; pdb.set_trace()
+
+
 if __name__ == '__main__':
-    if_data = dp.get_ifdata(use_csv=True, use_train=True)
+    if_data = dp.get_ifdata(dataset='psu', use_csv=True, split='val')
     query_path = os.path.join(data_path, 'queries.txt')
     queries = query_viz.generate_queries_from_file(query_path)
-    cross_validate(if_data, queries, K, NUM_XVALS)
+    # cross_validate_simple(if_data, queries, K, NUM_XVALS)
+    cross_validate_tune_rcnns(if_data, K)

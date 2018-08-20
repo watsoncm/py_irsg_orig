@@ -80,11 +80,11 @@ def get_heatmap(gmm, image_index, sub_index, obj_index, vg_data,
 
 
 def visualize_gmm(model_name, image_index, sub_index, obj_index, vg_data,
-                  bin_mod, ifdata, save_path=None):
+                  ifdata, save_path=None):
     """Fully visualizes a GMM given a model name and a series of indices."""
-    gmm_params = bin_mod[model_name]
-    gmm = gmm_utils.get_gmm(gmm_params.gmm_mu, gmm_params.gmm_sigma,
-                            gmm_params.gmm_weights)
+    gmm_params = ifdata.relationship_models[model_name]
+    gmm = gmm_utils.get_gmm(gmm_params.gmm_weights,
+                            gmm_params.gmm_mu, gmm_params.gmm_sigma)
     box_map, sub_bbox, obj_bbox = get_heatmap(gmm, image_index, sub_index,
                                               obj_index, vg_data)
     plot_heatmap(box_map, sub_bbox, obj_bbox, image_index, sub_index,
@@ -92,6 +92,6 @@ def visualize_gmm(model_name, image_index, sub_index, obj_index, vg_data,
 
 
 if __name__ == '__main__':
-    vgd, _, _, bin_mod, _, ifdata = dp.get_all_data(use_csv=True)
-    visualize_gmm('man_beside_man', 421, 0, 10, vgd['vgd_data_test'],
-                  bin_mod, ifdata)
+    vgd, _, _, _, _, ifdata = dp.get_all_data(use_csv=True)
+    visualize_gmm('man_beside_man', 421, 0, 10, vgd['vg_data_test'],
+                  ifdata)

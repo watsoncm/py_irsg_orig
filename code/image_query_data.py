@@ -1,3 +1,5 @@
+import os
+import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,8 +8,6 @@ from PIL import Image
 from scipy.ndimage.filters import gaussian_filter
 from scipy.stats import multivariate_normal
 from scipy.misc import logsumexp
-from sklearn import mixture
-from sklearn.mixture.gaussian_mixture import _compute_precision_cholesky
 
 import gmm_utils
 import irsg_core.image_fetch_core as ifc
@@ -428,8 +428,8 @@ class ImageQueryData(object):
             close_total_pot += self.pred_weight * self.close_pred_score
             close_addr_total = sum(self.close_sub_attr_pots +
                                    self.close_obj_attr_pots)
-            close_total_pot += self.attr_weights * close_addr_total
-            gt_total_pot += self.attr_weights * close_addr_total
+            close_total_pot += self.attr_weight * close_addr_total
+            gt_total_pot += self.attr_weight * close_addr_total
         else:
             close_total_pot, gt_total_pot = None, None
 

@@ -6,6 +6,7 @@ from collections import defaultdict
 
 from tqdm import tqdm
 
+import data_utils
 from config import get_config_path
 import irsg_core.data_pull as dp
 
@@ -18,7 +19,8 @@ with open(get_config_path()) as f:
 
 def convert_rcnn_data(input_path, output_path):
     bbox_dict = defaultdict(list)
-    for data_file in glob.glob(os.path.join(input_path, '*.csv')):
+    for data_file in tqdm(glob.glob(os.path.join(input_path, '*.csv')),
+                          desc='files'):
         data_name = os.path.basename(data_file).split('_')[0]
         with open(data_file) as f:
             csv_reader = csv.reader(f, delimiter=' ')
@@ -40,16 +42,30 @@ def convert_rcnn_data(input_path, output_path):
 
 
 if __name__ == '__main__':
-    ifdata = dp.get_ifdata(use_csv=True, use_train=True)
+    ifdata = dp.get_ifdata(use_csv=True, split='train')
     in_paths = [os.path.join(data_path, name) for name in
                 ('obj_rcnn_train', 'obj_rcnn_val',
                  'attr_rcnn_train', 'attr_rcnn_val',
                  'obj_rcnn_train_smol', 'obj_rcnn_val_smol',
                  'attr_rcnn_train_smol', 'attr_rcnn_val_smol')]
-    out_paths = [os.path.join(csv_path, name) for name in
-                 ('obj_files_train', 'obj_files_val',
-                  'attr_files_train', 'attr_files_val',
-                  'obj_files_train_smol', 'obj_files_val_smol',
-                  'attr_files_train_smol', 'attr_files_val_smol')]
-    for in_path, out_path in tqdm(zip(in_paths, out_paths)):
+    out_paths = [os.path.join(csv_path, 'datasets', *names) for names in
+                 (('psu', 'train', 'obj_files'),
+                  ('psu', 'val', 'obj_files'),
+                  ('psu', 'train', 'attr_files'),
+                  ('psu', 'val', 'attr_files'),
+                  ('psu-small', 'train', 'obj_files'),
+                  ('psu-small', 'val', 'obj_files'),
+                  ('psu-small', 'train', 'attr_files'),
+                  ('psu-small', 'val', 'attr_files'))]
+
+    for in_path, out_path in tqdm(zip(in_paths, out_paths), desc='paths'):
         convert_rcnn_data(in_path, out_path)
+
+    train_indices = data_utils.get_indices(data_path, 'train')
+    val_indices = data_utils.get_indices(data_path, 'val')
+    for dataset in ('psu', 'psu-small'):
+        data_path = os.path.join(csv_path, 'datasets', dataset)
+        with open(os.path.join(data_path, 'train', 'index.txt'), 'w') as f:
+            f.write('\n'.join([str(index) for index in train_indices]))
+        with open(os.path.join(data_path, 'val', 'index.txt'), 'w') as f:
+            f.write('\n'.join([str(index) for index in val_indices]))

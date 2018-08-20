@@ -43,7 +43,9 @@ def transfer_scores(ifdata, root_path, is_attr=False):
 
 def transfer_rels(ifdata, root_path):
     """Transfer GMM parameters into CSV."""
-    for name, model in ifdata.relationship_models.iteritems():
+    for name, model in tqdm(ifdata.relationship_models.iteritems(),
+                            total=len(ifdata.relationship_models),
+                            desc='rels'):
         gmm_utils.save_gmm_data(name, root_path, model.gmm_weights,
                                 model.gmm_mu, model.gmm_sigma)
 
@@ -115,32 +117,45 @@ def generate_image_csvs(ifdata, root_path):
                     writer.writerows(output_array)
 
 
-def transfer_image_names(ifdata, csv_path):
-    """Convert image filenames into CSV files."""
-    with open(csv_path, 'wb') as f:
-        csv_writer = csv.writer(f)
-        csv_writer.writerow(('image_index', 'filename'))
-        for image_index, image in enumerate(ifdata.vg_data):
-            ifdata.configure(image_index, None)
-            csv_writer.writerow((image_index, ifdata.image_filename))
+def transfer_indices(index_path, ifdata):
+    """Transfer indices into test set."""
+    with open(index_path, 'w') as f:
+        f.write('\n'.join([str(index) for index in
+                           range(len(ifdata.vg_data))]))
+
+
+def generate_train_set(path, test_obj_path, test_attr_path, test_rel_path,
+                       ifdata_train):
+    """Creates a train set that just references the test set."""
+    if not os.path.exists(path):
+        os.makedirs(path)
+    os.symlink(test_obj_path, os.path.join(path, 'obj_files'))
+    os.symlink(test_attr_path, os.path.join(path, 'attr_files'))
+    os.symlink(test_rel_path, os.path.join(path, 'rel_files'))
+    with open(os.path.join(path, 'index.txt'), 'w') as f:
+        f.write('\n'.join([str(index) for index in
+                           range(len(ifdata_train.vg_data))]))
 
 
 def convert_all_to_csv(by_image=False):
     """Converts all Matlab files into corresponding CSV files."""
     ifdata = dp.get_ifdata()
-    root_path = os.path.join(csv_path, 'datasets_beta', 'stanford', 'test')
+    ifdata_train = dp.get_ifdata(split='train')
+    root_path = os.path.join(csv_path, 'datasets', 'stanford')
+    test_path = os.path.join(root_path, 'test')
+    train_path = os.path.join(root_path, 'train')
     if by_image:
         image_csv_path = os.path.join(csv_path, 'image_files')
         if not os.path.exists(image_csv_path):
             os.mkdir(image_csv_path)
         generate_image_csvs(ifdata, image_csv_path)
     else:
-        obj_path = os.path.join(root_path, 'obj_files')
-        attr_path = os.path.join(root_path, 'attr_files')
-        rel_path = os.path.join(root_path, 'rel_files')
+        obj_path = os.path.join(test_path, 'obj_files')
+        attr_path = os.path.join(test_path, 'attr_files')
+        rel_path = os.path.join(test_path, 'rel_files')
         class_to_idx_path = os.path.join(csv_path, 'class_to_idx.csv')
         class_path = os.path.join(csv_path, 'classes.csv')
-        image_path = os.path.join(csv_path, 'image_paths.csv')
+        index_path = os.path.join(test_path, 'index.txt')
         for path in (obj_path, attr_path, rel_path):
             if not os.path.exists(path):
                 os.makedirs(path)
@@ -151,7 +166,9 @@ def convert_all_to_csv(by_image=False):
         transfer_platt_models(ifdata, obj_path, attr_path, rel_path)
         transfer_class_to_idx(ifdata, class_to_idx_path)
         transfer_classes(ifdata, class_path)
-        transfer_image_names(ifdata, image_path)
+        transfer_indices(index_path, ifdata)
+        generate_train_set(train_path, obj_path, attr_path, rel_path,
+                           ifdata_train)
 
 
 if __name__ == '__main__':

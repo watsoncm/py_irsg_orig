@@ -1,6 +1,8 @@
 *.pyc
 csv/
 data/all_data.h5
+data/obj_rcnn_*
+data/attr_rcnn_*
 !csv/.gitkeep
 csv.tar.gz
 output/

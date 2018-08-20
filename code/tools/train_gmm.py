@@ -18,7 +18,7 @@ with open(get_config_path()) as f:
     csv_path = cfg_data['file_paths']['csv_path']
 
 
-def get_binary_model_data(ifdata, indices, objs=None):
+def get_binary_model_data(ifdata, indices, rels=None):
     all_models = defaultdict(list)
     for index in indices:
         image_data = ifdata.vg_data[index]
@@ -26,9 +26,7 @@ def get_binary_model_data(ifdata, indices, objs=None):
             bbox_pair = (image_data.annotations.objects[triple.subject].bbox,
                          image_data.annotations.objects[triple.object].bbox)
             text_parts = data_utils.get_text_parts(image_data, triple)
-            if (objs is not None
-                    and text_parts[0] not in objs
-                    and text_parts[2] not in objs):
+            if (rels is not None and text_parts not in rels):
                 continue
             all_models[text_parts].append(bbox_pair)
 
@@ -72,20 +70,46 @@ def train_gmm(bbox_pairs):
     return gmm.weights_, gmm.means_, gmm.covariances_
 
 
+def parse_queries(query_path):
+    rels = []
+    with open(query_path) as f:
+        for line in f.read().splitlines():
+            parts = line.split()
+            raw_query, query_type = parts[:-1], parts[-1]
+            query = [part.replace('_', ' ') for part in raw_query]
+            if query_type == '(srao)':
+                rel = query[1]
+                rels.append((query[0], rel, query[3]))
+            elif query_type == '(asro)':
+                rel = query[2]
+                rels.append((query[1], rel, query[3]))
+            elif query_type == '(asrao)':
+                rel = query[2]
+                rels.append((query[1], rel, query[4]))
+            general_query = ('*', rel, '*')
+            if general_query not in rels:
+                rels.append(general_query)
+    return rels
+
+
 if __name__ == '__main__':
-    ifdata = dp.get_ifdata(use_csv=True, use_train=True)
-    with open(os.path.join()) as f:
-        smol_objs = f.read().splitlines()
-
-    output_paths = [os.path.join(csv_path, name) for name in
-                    ('rel_files_train', 'rel_files_val',
-                     'rel_files_train_smol', 'rel_files_val_smol')]
+    ifdata = dp.get_ifdata(use_csv=True, split='train')
+    smol_objs = os.listdir(os.path.join(csv_path, 'datasets', 'psu-small',
+                                        'train', 'obj_files'))
+    output_paths = [os.path.join(csv_path, 'datasets', *names) for names in
+                    (('psu', 'train', 'rel_files'),
+                     ('psu', 'val', 'rel_files'),
+                     ('psu-small', 'train', 'rel_files'),
+                     ('psu-small', 'val', 'rel_files'))]
     splits = ['train', 'val', 'train', 'val']
-    objs = [None, None, smol_objs, smol_objs]
+    query_path = os.path.join(data_path, 'queries.txt')
+    smol_rels = parse_queries(query_path)
+    rels = [None, None, smol_rels, smol_rels]
 
-    for output_path, split, objs in tqdm(zip(output_paths, splits, objs)):
+    for output_path, split, rels in tqdm(zip(output_paths, splits, rels),
+                                         desc='paths'):
         indices = data_utils.get_indices(data_path, split)
-        rel_dict = get_binary_model_data(ifdata, indices, objs=objs)
+        rel_dict = get_binary_model_data(ifdata, indices, rels=rels)
         for text, bbox_pairs in rel_dict.iteritems():
             gmm_data = train_gmm(bbox_pairs)
             gmm_utils.save_gmm_data(text, output_path, *gmm_data)
