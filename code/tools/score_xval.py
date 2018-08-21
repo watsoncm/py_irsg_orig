@@ -1,3 +1,4 @@
+import csv
 import os
 import json
 
@@ -11,6 +12,8 @@ import irsg_core.image_fetch_utils as ifu
 from config import get_config_path
 from image_query_data import ImageQueryData
 from collections import defaultdict
+from sklearn.metrics import roc_auc_score
+
 
 NUM_XVALS = 5
 K = 10
@@ -91,7 +94,19 @@ def cross_validate_tune_rcnns(if_data, k_val, iou_thresh=0.5):
                 gts[name].append(any([iou >= iou_thresh for iou in ious]))
                 preds[name].append(value[4])
 
+    auc_scores = {}
+    for name in gts.keys():
+        rcnn_gts = gts[name]
+        rcnn_preds = preds[name]
+        auc_scores[name] = roc_auc_score(rcnn_gts, rcnn_preds)
+
     import pdb; pdb.set_trace()
+    with open(os.path.join(out_path, 'rcnn_tune_results.txt'), 'w') as f:
+        csv_writer = csv.writer(f)
+        for name, auc_score in auc_scores.iteritems():
+            csv_writer.writerow((name, auc_score))
+
+        f.write()
 
 
 if __name__ == '__main__':

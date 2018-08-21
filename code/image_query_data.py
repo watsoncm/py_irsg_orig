@@ -1,4 +1,5 @@
 import os
+import csv
 import copy
 
 import numpy as np
@@ -8,8 +9,10 @@ from PIL import Image
 from scipy.ndimage.filters import gaussian_filter
 from scipy.stats import multivariate_normal
 from scipy.misc import logsumexp
+from tqdm import tqdm
 
 import gmm_utils
+import data_utils
 import irsg_core.image_fetch_core as ifc
 
 
@@ -75,17 +78,18 @@ class ImageQueryData(object):
                  obj_weight=1./3., attr_weight=1./3., pred_weight=1./3.):
         self.query = query
         self.query_id = query_id
-        query_triple = self.make_array(query.annotations.binary_triples)[0]
+        query_annos = query.annotations
+        query_triple = data_utils.make_array(query_annos.binary_triples)[0]
         self.query_sub_id = query_triple.subject
         self.query_obj_id = query_triple.object
         query_sub_data = query.annotations.objects[self.query_sub_id]
         query_obj_data = query.annotations.objects[self.query_obj_id]
-        self.query_sub = self.make_array(query_sub_data.names)[0]
+        self.query_sub = data_utils.make_array(query_sub_data.names)[0]
         self.query_pred = query_triple.predicate
-        self.query_obj = self.make_array(query_obj_data.names)[0]
-        attr_triples = self.make_array(self.query.annotations.unary_triples)
-        attributes = self.get_attributes(attr_triples, self.query_sub_id,
-                                         self.query_obj_id)
+        self.query_obj = data_utils.make_array(query_obj_data.names)[0]
+        attr_triples = data_utils.make_array(query_annos.unary_triples)
+        attributes = data_utils.get_attributes(
+            attr_triples, self.query_sub_id, self.query_obj_id)
         self.query_sub_attrs, self.query_obj_attrs = attributes
 
         self.image = if_data.vg_data[image_id]
@@ -107,24 +111,6 @@ class ImageQueryData(object):
         self.attr_weight = attr_weight
         self.pred_weight = pred_weight
 
-    @staticmethod
-    def make_array(items_or_single):
-        return np.array(items_or_single).reshape(-1)
-
-    @staticmethod
-    def make_bbox(mat_bbox):
-        return np.array([mat_bbox.x, mat_bbox.y, mat_bbox.w, mat_bbox.h])
-
-    @staticmethod
-    def get_attributes(attr_triples, subject_id, object_id):
-        sub_attrs, obj_attrs = [], []
-        for attr_triple in attr_triples:
-            if attr_triple.subject == subject_id:
-                sub_attrs.append(attr_triple.object)
-            elif attr_triple.subject == object_id:
-                obj_attrs.append(attr_triple.object)
-        return sub_attrs, obj_attrs
-
     def triple_matches(self, trip_sub, trip_pred, trip_obj,
                        sub_attrs, obj_attrs):
         has_sub_attrs = np.all([sub_attr in sub_attrs
@@ -138,13 +124,14 @@ class ImageQueryData(object):
                 has_obj_attrs)
 
     def get_image_ids(self):
-        unary_triples = self.make_array(self.image.annotations.unary_triples)
-        binary_triples = self.make_array(self.image.annotations.binary_triples)
+        image_annos = self.image_annotations
+        unary_triples = data_utils.make_array(image_annos.unary_triples)
+        binary_triples = data_utils.make_array(image_annos.binary_triples)
         for triple in binary_triples:
-            trip_sub, trip_pred, trip_obj = triple.text
-            sub_attrs, obj_attrs = self.get_attributes(unary_triples,
-                                                       triple.subject,
-                                                       triple.object)
+            trip_sub, trip_pred, trip_obj = data_utils.get_text_parts(
+                self.image, triple)
+            sub_attrs, obj_attrs = data_utils.get_attributes(
+                unary_triples, triple.subject, triple.object)
             if (self.triple_matches(trip_sub, trip_pred, trip_obj,
                                     sub_attrs, obj_attrs)):
                 return triple.subject, triple.object
@@ -438,22 +425,25 @@ class ImageQueryData(object):
     def get_image_boxes(self):
         if not self.compute_gt:
             return None, None
-        unary_triples = self.make_array(self.image.annotations.unary_triples)
-        binary_triples = self.make_array(self.image.annotations.binary_triples)
+        image_annos = self.image.annotations
+        unary_triples = data_utils.make_array(image_annos.unary_triples)
+        binary_triples = data_utils.make_array(image_annos.binary_triples)
         model_sub_bbox = self.boxes[self.model_sub_bbox_id]
         model_obj_bbox = self.boxes[self.model_obj_bbox_id]
         image_objects = self.image.annotations.objects
         bbox_pairs = []
         mean_ious = []
         for triple in binary_triples:
-            trip_sub, trip_pred, trip_obj = triple.text
-            sub_attrs, obj_attrs = self.get_attributes(unary_triples,
-                                                       triple.subject,
-                                                       triple.object)
+            trip_sub, trip_pred, trip_obj = data_utils.get_text_parts(
+                self.image, triple)
+            sub_attrs, obj_attrs = data_utils.get_attributes(
+                unary_triples, triple.subject, triple.object)
             if (self.triple_matches(trip_sub, trip_pred, trip_obj,
                                     sub_attrs, obj_attrs)):
-                sub_bbox = self.make_bbox(image_objects[triple.subject].bbox)
-                obj_bbox = self.make_bbox(image_objects[triple.object].bbox)
+                sub = image_objects[triple.subject]
+                obj = image_objects[triple.object]
+                sub_bbox = data_utils.make_bbox(sub.bbox)
+                obj_bbox = data_utils.make_bbox(obj.bbox)
                 sub_iou = self.get_iou(sub_bbox, model_sub_bbox)
                 obj_iou = self.get_iou(obj_bbox, model_obj_bbox)
                 bbox_pairs.append((sub_bbox, obj_bbox))
@@ -654,3 +644,56 @@ class ImageQueryData(object):
         else:
             plt.savefig(save_path, dpi=175)
         plt.close()
+
+
+def generate_energy_data(queries, path, if_data, use_geometric=False,
+                         iqd_params=None):
+    for query_id, query in tqdm(list(enumerate(queries)),
+                                total=len(queries)):
+        energy_list = []
+        for image_id in tqdm(range(len(if_data.vg_data))):
+            if iqd_params is None:
+                iqd_params = {}
+            iqd = ImageQueryData(query, query_id, image_id,
+                                 if_data, compute_gt=False,
+                                 **iqd_params)
+            iqd.compute_potential_data(use_relationships=not use_geometric)
+            energy = (np.sqrt(iqd.model_sub_pot * iqd.model_obj_pot)
+                      if use_geometric else iqd.model_total_pot)
+            energy_list.append(energy)
+
+        energy_name = 'q{:03d}_energy_values.csv'.format(query_id)
+        energy_path = os.path.join(path, energy_name)
+        with open(energy_path, 'wb') as f:
+            csv_writer = csv.writer(f)
+            csv_writer.writerow(("image_ix", "energy"))
+            for image_id, energy in enumerate(energy_list):
+                csv_writer.writerow((image_id, energy))
+
+
+def generate_iou_data(queries, path, if_data, use_geometric=False,
+                      iqd_params=None):
+    for query_id, query in tqdm(list(enumerate(queries)),
+                                total=len(queries)):
+        object_id_list = []
+        iou_list = []
+        tp_simple = data_utils.get_partial_query_matches(
+            if_data.vg_data, queries)
+        for image_id in tqdm(tp_simple[query_id]):
+            if iqd_params is None:
+                iqd_params = {}
+            iqd = ImageQueryData(query, query_id, image_id,
+                                 if_data, compute_gt=True,
+                                 **iqd_params)
+            iqd.compute_potential_data(use_relationships=not use_geometric)
+            object_id_list.extend([iqd.model_sub_bbox_id,
+                                   iqd.model_obj_bbox_id])
+            iou_list.extend([iqd.sub_iou, iqd.obj_iou])
+        iou_name = 'q{:03d}_iou_values.csv'.format(query_id)
+        iou_path = os.path.join(path, iou_name)
+        with open(iou_path, 'wb') as f:
+            csv_writer = csv.writer(f)
+            csv_writer.writerow(('image_ix', 'obj_ix', 'iou'))
+            for image_id, (object_id, iou) in enumerate(
+                    zip(object_id_list, iou_list)):
+                csv_writer.writerow((image_id, object_id, iou))

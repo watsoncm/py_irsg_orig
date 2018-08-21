@@ -3,10 +3,8 @@ import csv
 import json
 
 import numpy as np
-from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-from image_query_data import ImageQueryData
 from config import get_config_path
 
 with open(get_config_path()) as f:
@@ -14,55 +12,59 @@ with open(get_config_path()) as f:
     out_path = cfg_data['file_paths']['output_path']
 
 
-def generate_energy_data(queries, path, if_data, use_geometric=False,
-                         iqd_params=None):
-    for query_id, query in tqdm(list(enumerate(queries)),
-                                total=len(queries)):
-        energy_list = []
-        for image_id in tqdm(range(len(if_data.vg_data))):
-            if iqd_params is None:
-                iqd_params = {}
-            iqd = ImageQueryData(query, query_id, image_id,
-                                 if_data, compute_gt=False,
-                                 **iqd_params)
-            iqd.compute_potential_data(use_relationships=not use_geometric)
-            energy = (np.sqrt(iqd.model_sub_pot * iqd.model_obj_pot)
-                      if use_geometric else iqd.model_total_pot)
-            energy_list.append(energy)
-
-        energy_name = 'q{:03d}_energy_values.csv'.format(query_id)
-        energy_path = os.path.join(path, energy_name)
-        with open(energy_path, 'wb') as f:
-            csv_writer = csv.writer(f)
-            csv_writer.writerow(("image_ix", "energy"))
-            for image_id, energy in enumerate(energy_list):
-                csv_writer.writerow((image_id, energy))
+def make_array(items_or_single):
+    return np.array(items_or_single).reshape(-1)
 
 
-def generate_iou_data(queries, path, if_data, use_geometric=False,
-                      iqd_params=None):
-    for query_id, query in tqdm(list(enumerate(queries)),
-                                total=len(queries)):
-        object_id_list = []
-        iou_list = []
-        for image_id in tqdm(range(len(if_data.vg_data))):
-            if iqd_params is None:
-                iqd_params = {}
-            iqd = ImageQueryData(query, query_id, image_id,
-                                 if_data, compute_gt=False,
-                                 **iqd_params)
-            iqd.compute_potential_data(use_relationships=not use_geometric)
-            object_id_list.extend([iqd.model_sub_bbox_idx,
-                                   iqd.model_obj_bbox_idx])
-            iou_list.extend([iqd.sub_iou, iqd.obj_iou])
-        iou_name = 'q{:03d}_iou_values.csv'.format(query_id)
-        iou_path = os.path.join(path, iou_name)
-        with open(iou_path, 'wb') as f:
-            csv_writer = csv.writer(f)
-            csv_writer.writerow(('image_ix', 'obj_ix', 'iou'))
-            for image_id, (object_id, iou) in enumerate(
-                    zip(object_id_list, iou_list)):
-                csv_writer.writerow((image_id, object_id, iou))
+def make_bbox(mat_bbox):
+    return np.array([mat_bbox.x, mat_bbox.y, mat_bbox.w, mat_bbox.h])
+
+
+def get_attributes(attr_triples, subject_id, object_id):
+        sub_attrs, obj_attrs = [], []
+        for attr_triple in attr_triples:
+            if attr_triple.subject == subject_id:
+                sub_attrs.append(attr_triple.object)
+            elif attr_triple.subject == object_id:
+                obj_attrs.append(attr_triple.object)
+        return sub_attrs, obj_attrs
+
+
+def get_text_parts(image_data, triple):
+    sub = image_data.annotations.objects[triple.subject]
+    obj = image_data.annotations.objects[triple.object]
+    return make_array(sub.names)[0], triple.predicate, make_array(obj.names)[0]
+
+
+def does_match(image, query):
+    image_unary = make_array(image.annotations.unary_triples)
+    image_binary = make_array(image.annotations.binary_triples)
+    query_unary = make_array(query.annotations.unary_triples)
+    query_binary = query.annotations.binary_triples
+
+    query_sub, query_pred, query_obj = get_text_parts(query, query_binary)
+    query_sub_attrs, query_obj_attrs = get_attributes(
+        query_unary, query_binary.subject, query_binary.object)
+
+    for image_triple in image_binary:
+        image_sub, image_pred, image_obj = get_text_parts(image, image_triple)
+        image_sub_attrs, image_obj_attrs = get_attributes(
+            image_unary, image_triple.subject, image_triple.object)
+        if (query_sub == image_sub and
+                query_pred == image_pred and
+                query_obj == image_obj and
+                all([attr in image_sub_attrs for attr in query_sub_attrs]) and
+                all([attr in image_obj_attrs for attr in query_obj_attrs])):
+            return True
+    return False
+
+
+def get_partial_query_matches(images, queries):
+    matches = []
+    for query in queries:
+        matches.append([image_id for image_id, image in enumerate(images)
+                        if does_match(image, query)])
+    return np.array(matches)
 
 
 def get_r_at_k(base_dir, gt_map, n_images, file_suffix='_energy_values'):
@@ -119,7 +121,7 @@ def get_recall_values(data, ground_truth_map, n_images, show_plot=False,
 
 
 def get_iou_recall_values(data, ground_truth_map, n_images, show_plot=False,
-                          save_path=None, do_holdout=False, y_limit=0.6):
+                          save_path=None, do_holdout=False, y_limit=1.0):
     gen_plot = show_plot or save_path is not None
     if gen_plot:
         plot_handles = []
@@ -128,20 +130,24 @@ def get_iou_recall_values(data, ground_truth_map, n_images, show_plot=False,
 
     all_values = []
     for base_dir, label in data:
+        obj_ious = []
         for index in range(len(ground_truth_map)):
             csv_name = 'q{:03d}_iou_values.csv'.format(index)
             csv_path = os.path.join(base_dir, csv_name)
             if not os.path.isfile(csv_path):
                 continue
-            energies = np.genfromtxt(csv_path, delimiter=',', skip_header=1)
-            obj_ious = energies[:, 1]
-            threshs = np.linspace(0.05, 0.5, num=50)
-            recalls = [sum([iou > thresh for iou in obj_ious]) /
-                       float(len(obj_ious)) for thresh in threshs]
-            all_values.append(zip(threshs, recalls))
-            if gen_plot:
-                plot_handle = plt.plot(threshs, recalls, label=label)[0]
-                plot_handles.append(plot_handle)
+            csv_values = np.genfromtxt(csv_path, delimiter=',', skip_header=1)
+            if csv_values.size == 0:
+                continue
+            obj_ious.extend(csv_values[:, 2])
+
+        threshs = np.linspace(0.05, 0.5, num=50)
+        recalls = [sum([iou > thresh for iou in obj_ious]) /
+                   float(len(obj_ious)) for thresh in threshs]
+        all_values.append(zip(threshs, recalls))
+        if gen_plot:
+            plot_handle = plt.plot(threshs, recalls, label=label)[0]
+            plot_handles.append(plot_handle)
 
     if gen_plot:
         plt.xlabel('IOU threshold')
@@ -165,14 +171,6 @@ def get_false_negs(path):
         false_negs = [(int(query_index), int(image_index))
                       for query_index, image_index in list(csv_reader)[1:]]
     return false_negs
-
-
-def get_text_parts(image_data, triple):
-    sub = image_data.annotations.objects[triple.subject]
-    obj = image_data.annotations.objects[triple.object]
-    sub_name = np.array(sub.names).reshape(-1)[0]
-    obj_name = np.array(obj.names).reshape(-1)[0]
-    return (sub_name, triple.predicate, obj_name)
 
 
 def get_indices(path, split):

@@ -3,8 +3,8 @@ import json
 
 import query_viz
 import data_utils
+import image_query_data
 import irsg_core.data_pull as dp
-import irsg_core.image_fetch_utils as ifu
 from config import get_config_path
 
 
@@ -15,15 +15,15 @@ with open(get_config_path()) as f:
 
 
 def iou_check(queries, if_data, false_negs):
-    tp_simple = ifu.get_partial_scene_matches(if_data.vg_data, queries)
-    energy_path = os.path.join(out_path, 'query_energies/')
-    geom_energy_path = os.path.join(out_path, 'query_energies_geom/')
+    tp_simple = data_utils.get_partial_query_matches(if_data.vg_data, queries)
+    energy_path = os.path.join(out_path, 'query_ious/')
+    geom_energy_path = os.path.join(out_path, 'query_ious_geom/')
     for query_index, image_index in false_negs:
         tp_simple[query_index].append(image_index)
     data_simple = [(energy_path, 'factor graph'),
                    (geom_energy_path, 'geometric mean')]
-    data_utils.get_iou_values(data_simple, tp_simple, len(if_data.vg_data),
-                              show_plot=True)
+    data_utils.get_iou_recall_values(
+        data_simple, tp_simple, len(if_data.vg_data), show_plot=True)
 
 
 if __name__ == '__main__':
@@ -34,13 +34,13 @@ if __name__ == '__main__':
     batch_path = os.path.join(out_path, 'query_ious/')
     if not os.path.exists(batch_path):
         os.mkdir(batch_path)
-        data_utils.generate_iou_data(queries, batch_path, if_data)
+        image_query_data.generate_iou_data(queries, batch_path, if_data)
 
     geom_batch_path = os.path.join(out_path, 'query_ious_geom/')
     if not os.path.exists(geom_batch_path):
         os.mkdir(geom_batch_path)
-        data_utils.generate_iou_data(queries, geom_batch_path, if_data,
-                                     use_geometric=True)
+        image_query_data.generate_iou_data(
+            queries, geom_batch_path, if_data, use_geometric=True)
 
     false_neg_path = os.path.join(data_path, 'false_negs.csv')
     false_negs = data_utils.get_false_negs(false_neg_path)
