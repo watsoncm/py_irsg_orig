@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 import query_viz
 import data_utils
+import image_query_data
 import irsg_core.data_pull as dp
 import irsg_core.image_fetch_utils as ifu
 from config import get_config_path
@@ -31,8 +32,8 @@ def run_cross_val_test(if_data, queries, path, index,
     iqd_params = {'obj_weight': obj_weight,
                   'attr_weight': attr_weight,
                   'pred_weight': pred_weight}
-    data_utils.generate_energy_data(queries, path, if_data,
-                                    iqd_params=iqd_params)
+    image_query_data.generate_energy_data(queries, path, if_data,
+                                          iqd_params=iqd_params)
     data_simple = [(path, 'xval {} energies'.format(index))]
     false_neg_path = os.path.join(data_path, 'false_negs.csv')
     false_negs = data_utils.get_false_negs(false_neg_path)

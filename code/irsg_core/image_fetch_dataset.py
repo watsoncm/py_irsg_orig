@@ -69,6 +69,8 @@ class CSVImageFetchDataset(ImageFetchDataset):
         self.potentials_data['class_to_idx'] = class_to_idx
 
         # get vg_data
+        with open(os.path.join(self.split_path, 'index.txt')) as f:
+            self.indices = [int(line) for line in f.read().splitlines()]
         self.vg_data = self.load_vg_data(vg_data)
 
         # get box and score data
@@ -94,13 +96,11 @@ class CSVImageFetchDataset(ImageFetchDataset):
             self.platt_models = self.read_csv_platt_models()
 
     def load_vg_data(self, vg_data):
-        with open(os.path.join(self.split_path, 'index.txt')) as f:
-            indices = [int(line) for line in f.read().splitlines()]
         if self.split == 'test':
             vg_key = 'vg_data_test'
         else:
             vg_key = 'vg_data_train'
-        return vg_data[vg_key][indices]
+        return vg_data[vg_key][self.indices]
 
     def read_csv_class_data(self):
         classes = np.loadtxt(os.path.join(csv_path, 'classes.csv'),
@@ -153,7 +153,8 @@ class CSVImageFetchDataset(ImageFetchDataset):
         return {'platt_models': PlattModels(s_models=s_models)}
 
     def load_data(self, name, is_obj, image_index):
-        csv_name = 'irsg_{}.csv'.format(image_index)
+        abs_index = self.indices[image_index]
+        csv_name = 'irsg_{}.csv'.format(abs_index)
         obj_attr_path = self.obj_path if is_obj else self.attr_path
         csv_file_path = os.path.join(obj_attr_path, name, csv_name)
 
