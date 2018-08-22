@@ -84,19 +84,68 @@ def generate_test_plot(queries, if_data):
     iqd.generate_plot()
 
 
+def gen_sro(sub, pred, obj):
+    sub_struct, obj_struct = siom.mat_struct(), siom.mat_struct()
+    sub_struct.__setattr__('names', sub)
+    obj_struct.__setattr__('names', obj)
+
+    rel_struct = siom.mat_struct()
+    rel_struct.__setattr__('subject', 0)
+    rel_struct.__setattr__('object', 1)
+    rel_struct.__setattr__('predicate', pred)
+
+    query_struct = siom.mat_struct()
+    query_struct.__setattr__(
+        'objects', np.array([sub_struct, obj_struct]))
+    query_struct.__setattr__('unary_triples', np.array([]))
+    query_struct.__setattr__('binary_triples', rel_struct)
+    return query_struct
+
+
+def _get_unary_triple(attr, is_sub):
+    attr_struct = siom.mat_struct()
+    attr_struct.__setattr__('subject', 0 if is_sub else 1)
+    attr_struct.__setattr__('predicate', 'is')
+    attr_struct.__setattr__('object', attr)
+    return attr_struct
+
+
+def gen_srao(sub, pred, attr, obj):
+    query_struct = gen_sro(sub, pred, obj)
+    obj_attr_struct = _get_unary_triple(attr, False)
+    query_struct.__setattr__('unary_triples', obj_attr_struct)
+    return query_struct
+
+
+def gen_asro(attr, sub, pred, obj):
+    query_struct = gen_sro(sub, pred, obj)
+    sub_attr_struct = _get_unary_triple(attr, True)
+    query_struct.__setattr__('unary_triples', sub_attr_struct)
+    return query_struct
+
+
+def gen_asrao(sub_attr, sub, pred, obj_attr, obj):
+    query_struct = gen_sro(sub, pred, obj)
+    sub_attr_struct = _get_unary_triple(sub_attr, True)
+    obj_attr_struct = _get_unary_triple(obj_attr, False)
+    query_struct.__setattr__('unary_triples', np.array(
+        [sub_attr_struct, obj_attr_struct]))
+    return query_struct
+
+
 def generate_queries_from_file(path):
     """Read queries from a specially-formatted file."""
     queries = []
-    gen_dict = {'(sro)': ifq.gen_sro,
-                '(srao)': ifq.gen_srao,
-                '(asro)': ifq.gen_asro,
-                '(asrao)': ifq.gen_asrao}
+    gen_dict = {'(sro)': gen_sro,
+                '(srao)': gen_srao,
+                '(asro)': gen_asro,
+                '(asrao)': gen_asrao}
     with open(path) as f:
         for line in f.read().splitlines():
             query_struct = siom.mat_struct()
-            parts = line.split()
-            text, gen_func = ' '.join(parts[:-1]), gen_dict[parts[-1]]
-            query_struct.annotations = gen_func(text)
+            parts = [part.replace('_', ' ') for part in line.split()]
+            text_parts, gen_func = parts[:-1], gen_dict[parts[-1]]
+            query_struct.annotations = gen_func(*text_parts)
             queries.append(query_struct)
     return queries
 

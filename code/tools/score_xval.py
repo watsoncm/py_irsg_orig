@@ -113,5 +113,5 @@ if __name__ == '__main__':
     if_data = dp.get_ifdata(dataset='psu', use_csv=True, split='val')
     query_path = os.path.join(data_path, 'queries.txt')
     queries = query_viz.generate_queries_from_file(query_path)
-    # cross_validate_simple(if_data, queries, K, NUM_XVALS)
-    cross_validate_tune_rcnns(if_data, K)
+    cross_validate_simple(if_data, queries, K, NUM_XVALS)
+    # cross_validate_tune_rcnns(if_data, K)

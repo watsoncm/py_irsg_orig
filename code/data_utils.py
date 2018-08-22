@@ -75,7 +75,10 @@ def get_r_at_k(base_dir, gt_map, n_images, file_suffix='_energy_values'):
         csv_path = os.path.join(base_dir, csv_name)
         if not os.path.isfile(csv_path):
             continue
-        energies = np.genfromtxt(csv_path, delimiter=',', skip_header=1)
+        raw_energies = np.genfromtxt(csv_path, delimiter=',', skip_header=1)
+        energies = np.atleast_2d(raw_energies)
+        if energies.size == 0:
+            continue
         sort_ix = np.argsort(energies[:, 1])
         recall = np.ones(n_images, dtype=np.float)
         for k in range(len(energies)):
@@ -131,17 +134,20 @@ def get_iou_recall_values(data, ground_truth_map, n_images, show_plot=False,
     all_values = []
     for base_dir, label in data:
         obj_ious = []
+        import pdb; pdb.set_trace()
         for index in range(len(ground_truth_map)):
             csv_name = 'q{:03d}_iou_values.csv'.format(index)
             csv_path = os.path.join(base_dir, csv_name)
             if not os.path.isfile(csv_path):
                 continue
-            csv_values = np.genfromtxt(csv_path, delimiter=',', skip_header=1)
+            raw_csv_values = np.genfromtxt(
+                csv_path, delimiter=',', skip_header=1)
+            csv_values = np.atleast_2d(raw_csv_values)
             if csv_values.size == 0:
                 continue
             obj_ious.extend(csv_values[:, 2])
 
-        threshs = np.linspace(0.05, 0.5, num=50)
+        threshs = np.linspace(0.05, 0.5, num=2000)
         recalls = [sum([iou > thresh for iou in obj_ious]) /
                    float(len(obj_ious)) for thresh in threshs]
         all_values.append(zip(threshs, recalls))

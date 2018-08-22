@@ -75,7 +75,8 @@ class ConditionedIRSGMM(object):
 
 class ImageQueryData(object):
     def __init__(self, query, query_id, image_id, if_data, compute_gt=True,
-                 obj_weight=1./3., attr_weight=1./3., pred_weight=1./3.):
+                 obj_weight=1./3., attr_weight=1./3., pred_weight=1./3.,
+                 use_geometric=False):
         self.query = query
         self.query_id = query_id
         query_annos = query.annotations
@@ -103,6 +104,7 @@ class ImageQueryData(object):
         self.class_to_idx = potentials['class_to_idx']
         self.initialized_ = False
         self.compute_gt = compute_gt
+        self.use_geometric = use_geometric
 
         if not np.isclose(obj_weight + attr_weight + pred_weight, 1.0):
             raise ValueError('object, attribute, and relationship weights '
@@ -192,10 +194,27 @@ class ImageQueryData(object):
         obj_idx = np.argmax(obj_ious)
         return (sub_idx, obj_idx, sub_ious[sub_idx], obj_ious[obj_idx])
 
+    def get_model_ious(self):
+        model_sub_bbox = self.boxes[self.model_sub_bbox_id]
+        model_obj_bbox = self.boxes[self.model_obj_bbox_id]
+        sub_iou = self.get_iou(model_sub_bbox, self.image_sub_bbox)
+        obj_iou = self.get_iou(model_obj_bbox, self.image_obj_bbox)
+        return sub_iou, obj_iou
+
     def get_model_boxes(self):
-        gm, _ = ifc.generate_pgm(self.if_data, verbose=False)
-        self.model_energy, best_matches, _ = ifc.do_inference(gm)
-        return best_matches[0], best_matches[1]
+        if self.use_geometric:
+            sub_pot_id = self.class_to_idx['obj:' + self.query_sub] - 1
+            obj_pot_id = self.class_to_idx['obj:' + self.query_obj] - 1
+            sub_bbox_id = np.argmax(self.image_scores[:, sub_pot_id])
+            obj_bbox_id = np.argmax(self.image_scores[:, obj_pot_id])
+            sub_scores = self.image_scores[sub_bbox_id, sub_pot_id]
+            obj_scores = self.image_scores[obj_bbox_id, obj_pot_id]
+            self.model_energy = np.sqrt(sub_scores * obj_scores)
+            return sub_bbox_id, obj_bbox_id
+        else:
+            gm, _ = ifc.generate_pgm(self.if_data, verbose=False)
+            self.model_energy, best_matches, _ = ifc.do_inference(gm)
+            return best_matches[0], best_matches[1]
 
     def get_obj_scores(self):
         sub_pot_id = self.class_to_idx['obj:' + self.query_sub] - 1
@@ -400,23 +419,30 @@ class ImageQueryData(object):
         return np.array(pil_image)
 
     def get_total_pots(self):
-        model_total_pot = self.obj_weight * (self.model_sub_pot +
-                                             self.model_obj_pot)
-        model_total_pot += self.pred_weight * self.model_pred_score
-        model_total_pot += self.attr_weight * sum(self.model_sub_attr_pots +
-                                                  self.model_obj_attr_pots)
+        if self.use_geometric:
+            model_total_pot = np.sqrt(self.model_sub_pot * self.model_obj_pot)
+        else:
+            model_total_pot = self.obj_weight * (self.model_sub_pot +
+                                                 self.model_obj_pot)
+            model_total_pot += self.pred_weight * self.model_pred_score
+            all_attr_pots = self.model_sub_attr_pots + self.model_obj_attr_pots
+            model_total_pot += self.attr_weight * sum(all_attr_pots)
         if self.compute_gt:
-            gt_total_pot = self.obj_weight * (self.close_sub_pot +
-                                              self.close_obj_pot)
-            gt_total_pot += self.pred_weight * self.gt_pred_score
+            if self.use_geometric:
+                gt_total_pot = np.sqrt(self.close_sub_pot * self.close_obj_pot)
+                close_total_pot = gt_total_pot
+            else:
+                gt_total_pot = self.obj_weight * (self.close_sub_pot +
+                                                  self.close_obj_pot)
+                gt_total_pot += self.pred_weight * self.gt_pred_score
 
-            close_total_pot = self.obj_weight * (self.close_sub_pot +
-                                                 self.close_obj_pot)
-            close_total_pot += self.pred_weight * self.close_pred_score
-            close_addr_total = sum(self.close_sub_attr_pots +
-                                   self.close_obj_attr_pots)
-            close_total_pot += self.attr_weight * close_addr_total
-            gt_total_pot += self.attr_weight * close_addr_total
+                close_total_pot = self.obj_weight * (self.close_sub_pot +
+                                                     self.close_obj_pot)
+                close_total_pot += self.pred_weight * self.close_pred_score
+                close_addr_total = sum(self.close_sub_attr_pots +
+                                       self.close_obj_attr_pots)
+                gt_total_pot += self.attr_weight * close_addr_total
+                close_total_pot += self.attr_weight * close_addr_total
         else:
             close_total_pot, gt_total_pot = None, None
 
@@ -455,24 +481,27 @@ class ImageQueryData(object):
 
     def compute_potential_data(self, use_relationships=True):
         self.model_sub_bbox_id, self.model_obj_bbox_id = self.get_model_boxes()
-        self.image_sub_bbox, self.image_obj_bbox = self.get_image_boxes()
-        (self.close_sub_bbox_id, self.close_obj_bbox_id,
-         self.sub_iou, self.obj_iou) = self.get_gt_closest()
+        if self.compute_gt:
+            self.image_sub_bbox, self.image_obj_bbox = self.get_image_boxes()
+            (self.close_sub_bbox_id, self.close_obj_bbox_id,
+             self.sub_iou, self.obj_iou) = self.get_gt_closest()
+            self.sub_model_iou, self.obj_model_iou = self.get_model_ious()
         (self.model_sub_pot, self.model_obj_pot,
          self.close_sub_pot, self.close_obj_pot) = self.get_obj_scores()
-        (self.model_sub_attr_pots, self.model_obj_attr_pots,
-         self.close_sub_attr_pots,
-         self.close_obj_attr_pots) = self.get_attr_scores()
-        if use_relationships:
-            self.pred_model, self.pred_model_name = self.get_pred_model()
-            if self.pred_model is None:
-                raise ValueError('no relevant relationship model exists')
-            ((self.model_raw_pred_score, self.model_pred_score),
-             (self.close_raw_pred_score, self.close_pred_score),
-             (self.gt_raw_pred_score,
-              self.gt_pred_score)) = self.get_pred_scores()
-            (self.model_total_pot, self.gt_total_pot,
-             self.close_total_pot) = self.get_total_pots()
+        if not self.use_geometric:
+            (self.model_sub_attr_pots, self.model_obj_attr_pots,
+             self.close_sub_attr_pots,
+             self.close_obj_attr_pots) = self.get_attr_scores()
+            if use_relationships:
+                self.pred_model, self.pred_model_name = self.get_pred_model()
+                if self.pred_model is None:
+                    raise ValueError('no relevant relationship model exists')
+                ((self.model_raw_pred_score, self.model_pred_score),
+                 (self.close_raw_pred_score, self.close_pred_score),
+                 (self.gt_raw_pred_score,
+                  self.gt_pred_score)) = self.get_pred_scores()
+        (self.model_total_pot, self.gt_total_pot,
+         self.close_total_pot) = self.get_total_pots()
 
     def compute_plot_data(self, condition_gmm=False, visualize_gmm=False):
         self.compute_potential_data()
@@ -648,19 +677,19 @@ class ImageQueryData(object):
 
 def generate_energy_data(queries, path, if_data, use_geometric=False,
                          iqd_params=None):
-    for query_id, query in tqdm(list(enumerate(queries)),
-                                total=len(queries)):
+    for query_id, query in tqdm(enumerate(queries), total=len(queries)):
         energy_list = []
+        tp_simple = data_utils.get_partial_query_matches(
+            if_data.vg_data, queries)
         for image_id in tqdm(range(len(if_data.vg_data))):
             if iqd_params is None:
                 iqd_params = {}
-            iqd = ImageQueryData(query, query_id, image_id,
-                                 if_data, compute_gt=False,
-                                 **iqd_params)
-            iqd.compute_potential_data(use_relationships=not use_geometric)
-            energy = (np.sqrt(iqd.model_sub_pot * iqd.model_obj_pot)
-                      if use_geometric else iqd.model_total_pot)
-            energy_list.append(energy)
+            iqd = ImageQueryData(
+                query, query_id, image_id, if_data,
+                use_geometric=use_geometric, compute_gt=False,
+                **iqd_params)
+            iqd.compute_potential_data()
+            energy_list.append(iqd.model_total_pot)
 
         energy_name = 'q{:03d}_energy_values.csv'.format(query_id)
         energy_path = os.path.join(path, energy_name)
@@ -673,8 +702,7 @@ def generate_energy_data(queries, path, if_data, use_geometric=False,
 
 def generate_iou_data(queries, path, if_data, use_geometric=False,
                       iqd_params=None):
-    for query_id, query in tqdm(list(enumerate(queries)),
-                                total=len(queries)):
+    for query_id, query in tqdm(enumerate(queries), total=len(queries)):
         object_id_list = []
         iou_list = []
         tp_simple = data_utils.get_partial_query_matches(
@@ -682,13 +710,13 @@ def generate_iou_data(queries, path, if_data, use_geometric=False,
         for image_id in tqdm(tp_simple[query_id]):
             if iqd_params is None:
                 iqd_params = {}
-            iqd = ImageQueryData(query, query_id, image_id,
-                                 if_data, compute_gt=True,
-                                 **iqd_params)
-            iqd.compute_potential_data(use_relationships=not use_geometric)
+            iqd = ImageQueryData(
+                query, query_id, image_id, if_data,
+                use_geometric=use_geometric, **iqd_params)
+            iqd.compute_potential_data()
             object_id_list.extend([iqd.model_sub_bbox_id,
                                    iqd.model_obj_bbox_id])
-            iou_list.extend([iqd.sub_iou, iqd.obj_iou])
+            iou_list.extend([iqd.sub_model_iou, iqd.obj_model_iou])
         iou_name = 'q{:03d}_iou_values.csv'.format(query_id)
         iou_path = os.path.join(path, iou_name)
         with open(iou_path, 'wb') as f:

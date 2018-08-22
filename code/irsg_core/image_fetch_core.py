@@ -208,7 +208,8 @@ def generate_pgm(if_data, verbose=False):
       prefix_object_name = "obj:" + object_name
       detections = object_detections[prefix_object_name]
       unary_dets.append(detections[:,4])
-      log_scores = -np.log(detections[:,4])
+      with np.errstate(all='raise'):
+        log_scores = -np.log(detections[:,4])  # TODO: remove context 
       fid = gm.addFunction(log_scores)
     else:
       if verbose: print "  skipping {0}, no detection available (qry_ix:{1})".format(object_name, obj_ix)

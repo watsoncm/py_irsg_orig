@@ -5,7 +5,6 @@ import query_viz
 import data_utils
 import image_query_data
 import irsg_core.data_pull as dp
-import irsg_core.image_fetch_utils as ifu
 from config import get_config_path
 
 
@@ -17,7 +16,7 @@ with open(get_config_path()) as f:
 
 def recall_check(queries, if_data, false_negs):
     """Compute recalls for a given set of queries and plot."""
-    tp_simple = ifu.get_partial_scene_matches(if_data.vg_data, queries)
+    tp_simple = data_utils.get_partial_query_matches(if_data.vg_data, queries)
     for query_index, image_index in false_negs:
         tp_simple[query_index].append(image_index)
     energy_path = os.path.join(out_path, 'query_energies/')
