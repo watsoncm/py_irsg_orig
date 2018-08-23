@@ -207,9 +207,9 @@ def generate_pgm(if_data, verbose=False):
       is_cnn_detected.append(True)
       prefix_object_name = "obj:" + object_name
       detections = object_detections[prefix_object_name]
-      unary_dets.append(detections[:,4])
-      with np.errstate(all='raise'):
-        log_scores = -np.log(detections[:,4])  # TODO: remove context 
+      eps = np.finfo(float).eps
+      unary_dets.append(detections[:,4] + eps)
+      log_scores = -np.log(detections[:,4] + eps)
       fid = gm.addFunction(log_scores)
     else:
       if verbose: print "  skipping {0}, no detection available (qry_ix:{1})".format(object_name, obj_ix)
@@ -236,7 +236,8 @@ def generate_pgm(if_data, verbose=False):
       continue
     
     detections = attribute_detections[prefix_attribute_name]
-    log_scores = -np.log(detections[:,4])
+    eps = np.finfo(float).eps
+    log_scores = -np.log(detections[:,4] + eps)
 
     detail = "unary function for attribute '{0}' of object '{1}' (qry_ix:{2}, pgm_ix:{3})".format(attribute_name, query_graph.objects[obj_ix].names, obj_ix, pgm_ix)
     if verbose: print "  adding {0}".format(detail)
@@ -270,6 +271,7 @@ def generate_pgm(if_data, verbose=False):
   # generate a single cartesian product of the boxes
   # this will only work when all objects are detected across the same boxes
   # we know this is the case for this implementation
+  """
   master_cart_prod = None
   for i in range(0, n_objects):
     if object_is_detected[i]:
@@ -282,6 +284,7 @@ def generate_pgm(if_data, verbose=False):
       master_cart_prod = np.array([x for x in itertools.product(boxes, boxes)])
       break
   tracker.box_pairs = master_cart_prod
+  """
 
   # process each binary triple in the list
   if verbose: print "binary functions:"
@@ -332,7 +335,8 @@ def generate_pgm(if_data, verbose=False):
     rel_params = relationship_models[bin_trip_key]
     
     # generate features from subject and object detection boxes
-    cart_prod = master_cart_prod
+    cart_prod = np.array(list(itertools.product(
+      bin_subject_box, bin_object_box)))
     sub_dim = 0
     obj_dim = 1
     
@@ -519,9 +523,11 @@ def generate_pgm_all_objects(if_data, method='uniform', verbose=False):
       if verbose: print "  adding uniform detections for {0}, no detection available (qry_ix:{1})".format(object_name, obj_ix)
       detections = master_unif_detections
     
+
     unary_dets.append(detections[:,4])
-    log_scores = -np.log(detections[:,4])
-    fid = gm.addFunction(log_scores)
+    eps = np.finfo(np.float).eps
+    log_scores = -np.log(detections[:,4] + eps)
+    fid = gm.addFunction(log_scores + eps)
     func_detail = FuncDetail(fid, [pgm_ix], "explicit", "object unaries", detail)
     functions.append(func_detail)
   
@@ -540,7 +546,8 @@ def generate_pgm_all_objects(if_data, method='uniform', verbose=False):
       continue
     
     detections = attribute_detections[prefix_attribute_name]
-    log_scores = -np.log(detections[:,4])
+    eps = np.finfo(np.float).eps
+    log_scores = -np.log(detections[:,4] + eps)
     
     detail = "unary function for attribute '{0}' of object '{1}' (qry_ix:{2}, pgm_ix:{3})".format(attribute_name, query_graph.objects[obj_ix].names, obj_ix, pgm_ix)
     if verbose: print "  adding {0}".format(detail)
@@ -717,10 +724,9 @@ def do_inference(gm, n_steps=120, damping=0., convergence_bound=0.001, verbose=F
 
   infr_marginals = infr_output.marginals(detected_vars)
   infr_marginals = np.exp(-infr_marginals)
-  
   infr_best_match = infr_output.arg()
   infr_energy = infr_output.value()
-  
+
   return infr_energy, infr_best_match, infr_marginals
 
 

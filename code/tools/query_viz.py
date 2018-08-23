@@ -8,7 +8,6 @@ from tqdm import tqdm
 
 import irsg_core.data_pull as dp
 import irsg_core.image_fetch_utils as ifu
-import irsg_core.image_fetch_querygen as ifq
 from image_query_data import ImageQueryData
 from config import get_config_path
 
@@ -30,12 +29,14 @@ def generate_tp_neg(tp_data_pos, n_queries, n_images, negs_per_query):
 
 
 def generate_all_query_plots(queries, if_data, condition_gmm=False,
-                             visualize_gmm=False, negs_per_query=20):
+                             visualize_gmm=False, negs_per_query=20,
+                             use_geometric=False, suffix=None):
     """Generate plots for each given query."""
     tp_data_pos = ifu.get_partial_scene_matches(if_data.vg_data, queries)
     tp_data_neg = generate_tp_neg(tp_data_pos, len(queries),
                                   len(if_data.vg_data), negs_per_query)
-    output_dir = os.path.join(out_path, 'query_viz')
+    suffix_text = '' if suffix is None else '_' + suffix
+    output_dir = os.path.join(out_path, 'query_viz' + suffix_text)
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
     positive_energies = {}
@@ -49,7 +50,8 @@ def generate_all_query_plots(queries, if_data, condition_gmm=False,
                                        total=len(queries)):
             for image_index in tp_data[query_index]:
                 iqd = ImageQueryData(query, query_index, image_index, if_data,
-                                     compute_gt=is_pos)
+                                     compute_gt=is_pos,
+                                     use_geometric=use_geometric)
                 try:
                     iqd.compute_plot_data(condition_gmm=condition_gmm,
                                           visualize_gmm=visualize_gmm)
@@ -63,8 +65,8 @@ def generate_all_query_plots(queries, if_data, condition_gmm=False,
                 energies[save_path] = iqd.model_energy
 
     # Copy over all relevant images
-    top_pos_dir = os.path.join(out_path, 'query_top_pos')
-    top_neg_dir = os.path.join(out_path, 'query_top_neg')
+    top_pos_dir = os.path.join(out_path, 'query_top_pos' + suffix_text)
+    top_neg_dir = os.path.join(out_path, 'query_top_neg' + suffix_text)
     if not os.path.exists(top_pos_dir):
         os.mkdir(top_pos_dir)
     if not os.path.exists(top_neg_dir):
@@ -152,8 +154,9 @@ def generate_queries_from_file(path):
 
 if __name__ == '__main__':
     _, _, _, _, queries, if_data = dp.get_all_data(use_csv=True)
-    # path = os.path.join(data_path, 'queries.txt')
-    # queries = generate_queries_from_file(path)
-    # generate_all_query_plots(queries, if_data, condition_gmm=True,
-    #                          visualize_gmm=False)
-    generate_test_plot(queries, if_data)
+    path = os.path.join(data_path, 'queries.txt')
+    queries = generate_queries_from_file(path)
+    generate_all_query_plots(queries, if_data, condition_gmm=True,
+                             visualize_gmm=False, use_geometric=True,
+                             suffix='geom')
+    # generate_test_plot(queries, if_data)
