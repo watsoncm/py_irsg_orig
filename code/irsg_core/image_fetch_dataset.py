@@ -28,6 +28,7 @@ class ImageFetchDataset(object):
         self.per_object_attributes = None
         self.image_filename = ""
         self.current_sg_query = None
+        self.is_csv = False
 
     def configure(self, image_index, sg_query):
         if image_index != self.current_image_num:
@@ -55,6 +56,7 @@ class CSVImageFetchDataset(ImageFetchDataset):
         self.split = split
         self.csv_path = csv_path
         self.potentials_data = {}
+        self.is_csv = True
 
         # get paths
         self.dataset_path = os.path.join(csv_path, 'datasets', dataset)
@@ -77,7 +79,8 @@ class CSVImageFetchDataset(ImageFetchDataset):
         self.n_images = self.vg_data.shape[0]
         self.n_objs = len(os.listdir(self.obj_path))
         self.n_attrs = len(os.listdir(self.attr_path))
-        empty_pots = [None for _ in range(self.n_images)]
+        empty_pots = [[None for _ in range(self.n_objs + self.n_attrs)]
+                      for _ in range(self.n_images)]
         self.potentials_data['boxes'] = np.array(empty_pots)
         self.potentials_data['scores'] = np.array(empty_pots)
         self.loaded_cache = []
@@ -158,19 +161,15 @@ class CSVImageFetchDataset(ImageFetchDataset):
         obj_attr_path = self.obj_path if is_obj else self.attr_path
         csv_file_path = os.path.join(obj_attr_path, name, csv_name)
 
+        full_name = ('obj:' if is_obj else 'atr:') + name
+        class_idx = self.potentials_data['class_to_idx'][full_name] - 1
+
         # load relevant data and assign boxes
         data_array = np.loadtxt(csv_file_path, delimiter=',')
-        self.potentials_data['boxes'][image_index] = data_array[:, :4]
-
-        # create score array if necessary
-        if self.potentials_data['scores'][image_index] is None:
-            scores_shape = (data_array.shape[0], self.n_objs + self.n_attrs)
-            self.potentials_data['scores'][image_index] = np.zeros(
-                scores_shape)
-        full_name = ('obj:' if is_obj else 'atr:') + name
-        score_idx = self.potentials_data['class_to_idx'][full_name] - 1
+        image_boxes = self.potentials_data['boxes'][image_index]
+        image_boxes[class_idx] = data_array[:, :4]
         image_scores = self.potentials_data['scores'][image_index]
-        image_scores[:, score_idx] = data_array[:, 4]
+        image_scores[class_idx] = data_array[:, 4]
 
     def load_relevant_data(self, image_index, sg_query, load_all=False):
         if sg_query is not None or load_all:

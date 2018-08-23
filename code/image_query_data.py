@@ -97,11 +97,20 @@ class ImageQueryData(object):
         self.image_id = image_id
 
         self.if_data = if_data
+        if not self.if_data.is_csv:
+            raise ValueError('Dataset must be from CSV format')
         self.if_data.configure(self.image_id, self.query.annotations)
         potentials = self.if_data.potentials_data
         self.boxes = potentials['boxes'][self.image_id]
         self.image_scores = potentials['scores'][self.image_id]
         self.class_to_idx = potentials['class_to_idx']
+        self.sub_class_id = self.class_to_idx['obj:' + self.query_sub] - 1
+        self.obj_class_id = self.class_to_idx['obj:' + self.query_obj] - 1
+        self.sub_boxes = self.boxes[self.sub_class_id]
+        self.obj_boxes = self.boxes[self.sub_class_id]
+        self.sub_scores = self.image_scores[self.sub_class_id]
+        self.obj_scores = self.image_scores[self.obj_class_id]
+
         self.initialized_ = False
         self.compute_gt = compute_gt
         self.use_geometric = use_geometric
@@ -187,28 +196,26 @@ class ImageQueryData(object):
         if not self.compute_gt:
             return (None, None, None, None)
         sub_ious = [self.get_iou(box, self.image_sub_bbox)
-                    for box in self.boxes]
+                    for box in self.boxes[self.sub_class_id]]
         obj_ious = [self.get_iou(box, self.image_obj_bbox)
-                    for box in self.boxes]
+                    for box in self.boxes[self.obj_class_id]]
         sub_idx = np.argmax(sub_ious)
         obj_idx = np.argmax(obj_ious)
         return (sub_idx, obj_idx, sub_ious[sub_idx], obj_ious[obj_idx])
 
     def get_model_ious(self):
-        model_sub_bbox = self.boxes[self.model_sub_bbox_id]
-        model_obj_bbox = self.boxes[self.model_obj_bbox_id]
+        model_sub_bbox = self.obj_boxes[self.model_sub_bbox_id]
+        model_obj_bbox = self.sub_boxes[self.model_obj_bbox_id]
         sub_iou = self.get_iou(model_sub_bbox, self.image_sub_bbox)
         obj_iou = self.get_iou(model_obj_bbox, self.image_obj_bbox)
         return sub_iou, obj_iou
 
     def get_model_boxes(self):
         if self.use_geometric:
-            sub_pot_id = self.class_to_idx['obj:' + self.query_sub] - 1
-            obj_pot_id = self.class_to_idx['obj:' + self.query_obj] - 1
-            sub_bbox_id = np.argmax(self.image_scores[:, sub_pot_id])
-            obj_bbox_id = np.argmax(self.image_scores[:, obj_pot_id])
-            sub_scores = self.image_scores[sub_bbox_id, sub_pot_id]
-            obj_scores = self.image_scores[obj_bbox_id, obj_pot_id]
+            sub_bbox_id = np.argmax(self.sub_scores)
+            obj_bbox_id = np.argmax(self.obj_scores)
+            sub_scores = self.sub_scores[sub_bbox_id]
+            obj_scores = self.obj_scores[obj_bbox_id]
             self.model_energy = np.sqrt(sub_scores * obj_scores)
             return sub_bbox_id, obj_bbox_id
         else:
@@ -217,17 +224,13 @@ class ImageQueryData(object):
             return best_matches[0], best_matches[1]
 
     def get_obj_scores(self):
-        sub_pot_id = self.class_to_idx['obj:' + self.query_sub] - 1
-        obj_pot_id = self.class_to_idx['obj:' + self.query_obj] - 1
-        model_sub_pot = self.image_scores[self.model_sub_bbox_id, sub_pot_id]
-        model_obj_pot = self.image_scores[self.model_obj_bbox_id, obj_pot_id]
+        model_sub_pot = self.sub_scores[self.model_sub_bbox_id]
+        model_obj_pot = self.obj_scores[self.model_obj_bbox_id]
         eps = np.finfo(np.float).eps
         model_pots = (model_sub_pot, model_obj_pot)
         if self.compute_gt:
-            close_sub_pot = self.image_scores[self.close_sub_bbox_id,
-                                              sub_pot_id]
-            close_obj_pot = self.image_scores[self.close_obj_bbox_id,
-                                              obj_pot_id]
+            close_sub_pot = self.sub_scores[self.close_sub_bbox_id]
+            close_obj_pot = self.obj_scores[self.close_obj_bbox_id]
             close_pots = (close_sub_pot, close_obj_pot)
             log_pots = [-np.log(pot + eps) for pot in model_pots + close_pots]
         else:
@@ -248,16 +251,16 @@ class ImageQueryData(object):
 
         eps = np.finfo(np.float).eps
         for pot_id in sub_attr_pot_ids:
-            model_pot = self.image_scores[self.model_sub_bbox_id, pot_id]
+            model_pot = self.image_scores[pot_id][self.model_sub_bbox_id]
             model_sub_attr_pots.append(-np.log(model_pot + eps))
             if self.compute_gt:
-                gt_pot = self.image_scores[self.close_sub_bbox_id, pot_id]
+                gt_pot = self.image_scores[pot_id][self.close_sub_bbox_id]
                 close_sub_attr_pots.append(-np.log(gt_pot + eps))
         for pot_id in obj_attr_pot_ids:
-            model_pot = self.image_scores[self.model_obj_bbox_id, pot_id]
+            model_pot = self.image_scores[pot_id][self.model_obj_bbox_id]
             model_obj_attr_pots.append(-np.log(model_pot + eps))
             if self.compute_gt:
-                gt_pot = self.image_scores[self.close_obj_bbox_id, pot_id]
+                gt_pot = self.image_scores[pot_id][self.close_obj_bbox_id]
                 close_obj_attr_pots.append(-np.log(gt_pot + eps))
         return (model_sub_attr_pots, model_obj_attr_pots,
                 close_sub_attr_pots, close_obj_attr_pots)
@@ -298,8 +301,8 @@ class ImageQueryData(object):
         return log_scores[0], -np.log(sig_scores[0])
 
     def get_pred_scores(self):
-        model_sub_bbox = self.boxes[self.model_sub_bbox_id]
-        model_obj_bbox = self.boxes[self.model_obj_bbox_id]
+        model_sub_bbox = self.sub_boxes[self.model_sub_bbox_id]
+        model_obj_bbox = self.obj_boxes[self.model_obj_bbox_id]
         pred_params = (self.pred_model.gmm_weights,
                        self.pred_model.gmm_mu,
                        self.pred_model.gmm_sigma,
@@ -309,8 +312,8 @@ class ImageQueryData(object):
                                                 model_obj_bbox,
                                                 *pred_params)
         if self.compute_gt:
-            close_sub_bbox = self.boxes[self.close_sub_bbox_id]
-            close_obj_bbox = self.boxes[self.close_obj_bbox_id]
+            close_sub_bbox = self.sub_boxes[self.close_sub_bbox_id]
+            close_obj_bbox = self.obj_boxes[self.close_obj_bbox_id]
             close_pred_scores = self.score_box_pair(close_sub_bbox,
                                                     close_obj_bbox,
                                                     *pred_params)
@@ -360,8 +363,8 @@ class ImageQueryData(object):
 
     def get_heatmaps(self, n_samples=250, condition_gmm=False,
                      visualize_gmm=False):
-        model_sub_bbox = self.boxes[self.model_sub_bbox_id]
-        model_obj_bbox = self.boxes[self.model_obj_bbox_id]
+        model_sub_bbox = self.sub_boxes[self.model_sub_bbox_id]
+        model_obj_bbox = self.obj_boxes[self.model_obj_bbox_id]
         bbox_pairs = [(model_sub_bbox, model_obj_bbox)]
         if self.compute_gt:
             bbox_pairs.append((self.image_sub_bbox, self.image_obj_bbox))
@@ -454,8 +457,8 @@ class ImageQueryData(object):
         image_annos = self.image.annotations
         unary_triples = data_utils.make_array(image_annos.unary_triples)
         binary_triples = data_utils.make_array(image_annos.binary_triples)
-        model_sub_bbox = self.boxes[self.model_sub_bbox_id]
-        model_obj_bbox = self.boxes[self.model_obj_bbox_id]
+        model_sub_bbox = self.sub_boxes[self.model_sub_bbox_id]
+        model_obj_bbox = self.obj_boxes[self.model_obj_bbox_id]
         image_objects = self.image.annotations.objects
         bbox_pairs = []
         mean_ious = []
@@ -579,8 +582,8 @@ class ImageQueryData(object):
                  **ax2_params)
 
         # Add bounding boxes
-        model_sub_bbox = self.boxes[self.model_sub_bbox_id]
-        model_obj_bbox = self.boxes[self.model_obj_bbox_id]
+        model_sub_bbox = self.sub_boxes[self.model_sub_bbox_id]
+        model_obj_bbox = self.obj_boxes[self.model_obj_bbox_id]
         model_sub_patch = self.get_rect(model_sub_bbox, sub_params)
         model_obj_patch = self.get_rect(model_obj_bbox, obj_params)
         ax1.add_patch(model_sub_patch)
@@ -592,8 +595,8 @@ class ImageQueryData(object):
             ax2.add_patch(gt_sub_patch)
             ax2.add_patch(gt_obj_patch)
 
-            close_sub_bbox = self.boxes[self.close_sub_bbox_id]
-            close_obj_bbox = self.boxes[self.close_obj_bbox_id]
+            close_sub_bbox = self.sub_boxes[self.close_sub_bbox_id]
+            close_obj_bbox = self.obj_boxes[self.close_obj_bbox_id]
             close_sub_patch = self.get_rect(close_sub_bbox, alt_sub_params)
             close_obj_patch = self.get_rect(close_obj_bbox, alt_obj_params)
             ax2.add_patch(close_sub_patch)
@@ -679,8 +682,6 @@ def generate_energy_data(queries, path, if_data, use_geometric=False,
                          iqd_params=None):
     for query_id, query in tqdm(enumerate(queries), total=len(queries)):
         energy_list = []
-        tp_simple = data_utils.get_partial_query_matches(
-            if_data.vg_data, queries)
         for image_id in tqdm(range(len(if_data.vg_data))):
             if iqd_params is None:
                 iqd_params = {}

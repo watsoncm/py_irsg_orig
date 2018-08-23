@@ -354,9 +354,7 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names, verb
   n_objects = object_names.shape[0]
   detections = np.empty(n_objects, dtype=np.ndarray)
   
-  if use_csv:
-    box_coords = np.copy(potential_data['boxes'][image_ix])
-  else:
+  if not use_csv:
     box_coords = np.copy(potential_data['potentials_s'].boxes[image_ix])
     box_coords[:,2] -= box_coords[:,0]
     box_coords[:,3] -= box_coords[:,1]
@@ -375,7 +373,7 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names, verb
 
     obj_ix = obj_id_dict[o]
     obj_ix -= 1 # matlab is 1-based
-    
+
     a = 1.0
     b = 1.0
     platt_keys = platt_mod['platt_models'].s_models.serialization.keys
@@ -387,15 +385,17 @@ def get_class_detections(image_ix, potential_data, platt_mod, object_names, verb
       b = platt_coeff[1]
     
     if use_csv:
-      scores = potential_data['scores'][image_ix][:, obj_ix]
+      box_coords = potential_data['boxes'][image_ix][obj_ix]
+      scores = potential_data['scores'][image_ix][obj_ix]
     else:
       scores = potential_data['potentials_s'].scores[image_ix][:, obj_ix]
       scores = 1.0 / (1.0 + np.exp(a * scores + b))
     
-    n_detections = scores.shape[0]
-    scores = scores.reshape(n_detections, 1)
-
-    class_det = np.concatenate((box_coords, scores), axis=1)
+    if scores is None:
+      class_det = np.empty([])
+    else:
+      scores = scores.reshape(-1, 1)
+      class_det = np.concatenate((box_coords, scores), axis=1)
     detections[det_ix] = class_det
     if verbose: print "%d: %s" % (det_ix, o)
     det_ix += 1
