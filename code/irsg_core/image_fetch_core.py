@@ -722,8 +722,9 @@ def do_inference(gm, n_steps=120, damping=0., convergence_bound=0.001, verbose=F
     if gm.numberOfLabels(i) > 1:
       detected_vars.append(i)
 
-  infr_marginals = infr_output.marginals(detected_vars)
-  infr_marginals = np.exp(-infr_marginals)
+  # infr_marginals = infr_output.marginals(detected_vars)
+  # infr_marginals = np.exp(-infr_marginals)
+  infr_marginals = None
   infr_best_match = infr_output.arg()
   infr_energy = infr_output.value()
 

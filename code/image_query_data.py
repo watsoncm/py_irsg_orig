@@ -214,13 +214,10 @@ class ImageQueryData(object):
         if self.use_geometric:
             sub_bbox_id = np.argmax(self.sub_scores)
             obj_bbox_id = np.argmax(self.obj_scores)
-            sub_scores = self.sub_scores[sub_bbox_id]
-            obj_scores = self.obj_scores[obj_bbox_id]
-            self.model_energy = np.sqrt(sub_scores * obj_scores)
             return sub_bbox_id, obj_bbox_id
         else:
             gm, _ = ifc.generate_pgm(self.if_data, verbose=False)
-            self.model_energy, best_matches, _ = ifc.do_inference(gm)
+            self.gm_energy, best_matches, _ = ifc.do_inference(gm)
             return best_matches[0], best_matches[1]
 
     def get_obj_scores(self):
@@ -423,7 +420,8 @@ class ImageQueryData(object):
 
     def get_total_pots(self):
         if self.use_geometric:
-            model_total_pot = np.sqrt(self.model_sub_pot * self.model_obj_pot)
+            model_total_pot = np.sqrt(max(0, self.model_sub_pot) *
+                                      max(0, self.model_obj_pot))
         else:
             model_total_pot = self.obj_weight * (self.model_sub_pot +
                                                  self.model_obj_pot)
@@ -508,9 +506,10 @@ class ImageQueryData(object):
 
     def compute_plot_data(self, condition_gmm=False, visualize_gmm=False):
         self.compute_potential_data()
-        (self.model_heatmap,
-         self.gt_heatmap) = self.get_heatmaps(condition_gmm=condition_gmm,
-                                              visualize_gmm=visualize_gmm)
+        if not self.use_geometric:
+            (self.model_heatmap,
+             self.gt_heatmap) = self.get_heatmaps(condition_gmm=condition_gmm,
+                                                  visualize_gmm=visualize_gmm)
         self.image_array = self.get_image_array()
         self.query_text = self.get_query_text()
         self.initialized_ = True
@@ -532,22 +531,23 @@ class ImageQueryData(object):
         ax2.imshow(self.image_array, cmap='gray')
 
         # Draw heatmaps
-        if sigma_blur is not None:
-            model_heatmap_blur = gaussian_filter(self.model_heatmap,
-                                                 sigma=sigma_blur)
-            gt_heatmap_blur = gaussian_filter(self.gt_heatmap,
-                                              sigma=sigma_blur)
-        else:
-            model_heatmap_blur = self.model_heatmap
-            gt_heatmap_blur = self.gt_heatmap
-        heatmaps = ((model_heatmap_blur, gt_heatmap_blur) if self.compute_gt
-                    else (model_heatmap_blur,))
-        vmin, vmax = np.min(heatmaps), np.max(heatmaps)
-        ax1.imshow(model_heatmap_blur.T, vmin=vmin,
-                   vmax=vmax, alpha=0.4)
-        if self.compute_gt:
-            ax2.imshow(gt_heatmap_blur.T, vmin=vmin,
+        if not self.use_geometric:
+            if sigma_blur is not None:
+                model_heatmap_blur = gaussian_filter(self.model_heatmap,
+                                                     sigma=sigma_blur)
+                gt_heatmap_blur = gaussian_filter(self.gt_heatmap,
+                                                  sigma=sigma_blur)
+            else:
+                model_heatmap_blur = self.model_heatmap
+                gt_heatmap_blur = self.gt_heatmap
+            heatmaps = ((model_heatmap_blur, gt_heatmap_blur)
+                        if self.compute_gt else (model_heatmap_blur,))
+            vmin, vmax = np.min(heatmaps), np.max(heatmaps)
+            ax1.imshow(model_heatmap_blur.T, vmin=vmin,
                        vmax=vmax, alpha=0.4)
+            if self.compute_gt:
+                ax2.imshow(gt_heatmap_blur.T, vmin=vmin,
+                           vmax=vmax, alpha=0.4)
 
         # Prepare parameters
         ax1_params = {'bbox': {'facecolor': 'black', 'alpha': 0.8},
@@ -611,61 +611,85 @@ class ImageQueryData(object):
                      verticalalignment='bottom', **ax2_params)
 
         # Extract attribute energy text
-        attr_format = '        {} -> {}: {:.6f}'
-        model_attr_lines, gt_attr_lines = [], []
-        if self.compute_gt:
-            for attr, gt_pot in zip(self.query_sub_attrs,
-                                    self.close_sub_attr_pots):
-                gt_line = attr_format.format(attr, self.query_sub, gt_pot)
-                gt_attr_lines.append(gt_line)
-            for attr, gt_pot in zip(self.query_obj_attrs,
-                                    self.close_obj_attr_pots):
-                gt_line = attr_format.format(attr, self.query_obj, gt_pot)
-                gt_attr_lines.append(gt_line)
+        if not self.use_geometric:
+            attr_format = '        {} -> {}: {:.6f}'
+            model_attr_lines, gt_attr_lines = [], []
+            if self.compute_gt:
+                for attr, gt_pot in zip(self.query_sub_attrs,
+                                        self.close_sub_attr_pots):
+                    gt_line = attr_format.format(attr, self.query_sub, gt_pot)
+                    gt_attr_lines.append(gt_line)
+                for attr, gt_pot in zip(self.query_obj_attrs,
+                                        self.close_obj_attr_pots):
+                    gt_line = attr_format.format(attr, self.query_obj, gt_pot)
+                    gt_attr_lines.append(gt_line)
 
-        for attr, model_pot in zip(self.query_sub_attrs,
-                                   self.model_sub_attr_pots):
-            model_line = attr_format.format(attr, self.query_sub, model_pot)
-            model_attr_lines.append(model_line)
-        for attr, model_pot in zip(self.query_obj_attrs,
-                                   self.model_obj_attr_pots):
-            model_line = attr_format.format(attr, self.query_obj, model_pot)
-            model_attr_lines.append(model_line)
+            for attr, model_pot in zip(self.query_sub_attrs,
+                                       self.model_sub_attr_pots):
+                model_line = attr_format.format(
+                    attr, self.query_sub, model_pot)
+                model_attr_lines.append(model_line)
+            for attr, model_pot in zip(self.query_obj_attrs,
+                                       self.model_obj_attr_pots):
+                model_line = attr_format.format(
+                    attr, self.query_obj, model_pot)
+                model_attr_lines.append(model_line)
 
         # Add energy information
-        model_score_format = ('Subject ({}) potential: {:.6f}\n'
-                              'Object ({}) potential: {:.6f}\n'
-                              'Relationship ({}) potential: {:.6f}\n'
-                              '(Pre-Platt scaling: {:.6f})\n'
-                              'Attribute potentials:\n{}\n'
-                              'Total potential: {:.6f}')
-        gt_score_format = ('Subject ({}) potential (closest box): {:.6f}\n'
-                           'Object ({}) potential (closest box): {:.6f}\n'
-                           'Relationship ({}) potential: {:.6f}\n'
-                           '(Pre-Platt scaling: {:.6f})\n'
-                           'Relationship potential (closest boxes): {:.6f}\n'
-                           '(Pre-Platt scaling: {:.6f})\n'
-                           'Attribute potentials (closest boxes):\n{}\n'
-                           'Total potential (using closest boxes): {:.6f}\n'
-                           '(Using closest boxes except for relation: {:.6f})')
-
-        model_score_parts = (self.query_sub, self.model_sub_pot,
-                             self.query_obj, self.model_obj_pot,
-                             self.pred_model_name, self.model_pred_score,
-                             self.model_raw_pred_score,
-                             '\n'.join(model_attr_lines), self.model_total_pot)
+        if self.use_geometric:
+            model_score_format = (
+                'Subject ({}) potential: {:.6f}\n'
+                'Object ({}) potential: {:.6f}\n'
+                'Geometric mean of potentials: {:.6f}')
+            model_score_parts = (self.query_sub, self.model_sub_pot,
+                                 self.query_obj, self.model_obj_pot,
+                                 self.model_total_pot)
+        else:
+            model_score_format = (
+                'Subject ({}) potential: {:.6f}\n'
+                'Object ({}) potential: {:.6f}\n'
+                'Relationship ({}) potential: {:.6f}\n'
+                '(Pre-Platt scaling: {:.6f})\n'
+                'Attribute potentials:\n{}\n'
+                'Total potential: {:.6f}')
+            model_score_parts = (self.query_sub, self.model_sub_pot,
+                                 self.query_obj, self.model_obj_pot,
+                                 self.pred_model_name, self.model_pred_score,
+                                 self.model_raw_pred_score,
+                                 '\n'.join(model_attr_lines),
+                                 self.model_total_pot)
         model_score_text = model_score_format.format(*model_score_parts)
         ax1.text(0.02, 1.03, model_score_text, horizontalalignment='left',
                  verticalalignment='bottom', **ax1_params)
 
         if self.compute_gt:
-            gt_score_parts = (self.query_sub, self.close_sub_pot,
-                              self.query_obj, self.close_obj_pot,
-                              self.pred_model_name, self.gt_pred_score,
-                              self.gt_raw_pred_score, self.close_pred_score,
-                              self.close_raw_pred_score,
-                              '\n'.join(gt_attr_lines), self.close_total_pot,
-                              self.gt_total_pot)
+            if self.use_geometric:
+                gt_score_parts = (self.query_sub, self.close_sub_pot,
+                                  self.query_obj, self.close_obj_pot,
+                                  self.close_total_pot)
+                gt_score_format = (
+                    'Subject ({}) potential (closest box): {:.6f}\n'
+                    'Object ({}) potential (closest box): {:.6f}\n'
+                    'Total potential (using closest boxes): {:.6f}')
+            else:
+                gt_score_parts = (self.query_sub, self.close_sub_pot,
+                                  self.query_obj, self.close_obj_pot,
+                                  self.pred_model_name, self.gt_pred_score,
+                                  self.gt_raw_pred_score,
+                                  self.close_pred_score,
+                                  self.close_raw_pred_score,
+                                  '\n'.join(gt_attr_lines),
+                                  self.close_total_pot, self.gt_total_pot)
+                gt_score_format = (
+                    'Subject ({}) potential (closest box): {:.6f}\n'
+                    'Object ({}) potential (closest box): {:.6f}\n'
+                    'Relationship ({}) potential: {:.6f}\n'
+                    '(Pre-Platt scaling: {:.6f})\n'
+                    'Relationship potential (closest boxes): {:.6f}\n'
+                    '(Pre-Platt scaling: {:.6f})\n'
+                    'Attribute potentials (closest boxes):\n{}\n'
+                    'Total potential (using closest boxes): {:.6f}\n'
+                    '(Using closest boxes except for relation: {:.6f})')
             gt_score_text = gt_score_format.format(*gt_score_parts)
             ax2.text(0.02, 1.03, gt_score_text, horizontalalignment='left',
                      verticalalignment='bottom', **ax2_params)

@@ -57,12 +57,12 @@ def generate_all_query_plots(queries, if_data, condition_gmm=False,
                                           visualize_gmm=visualize_gmm)
                 except ValueError:
                     continue
-                image_format = 'q{:03d}_i{:03d}_{}_{:.2f}.png'
+                image_format = 'q{:03d}_i{:03d}_{}_{:.3f}.png'
                 image_name = image_format.format(query_index, image_index,
-                                                 label, iqd.model_energy)
+                                                 label, iqd.model_total_pot)
                 save_path = os.path.join(output_dir, image_name)
                 iqd.generate_plot(save_path=save_path)
-                energies[save_path] = iqd.model_energy
+                energies[save_path] = iqd.model_total_pot
 
     # Copy over all relevant images
     top_pos_dir = os.path.join(out_path, 'query_top_pos' + suffix_text)
@@ -156,6 +156,8 @@ if __name__ == '__main__':
     _, _, _, _, queries, if_data = dp.get_all_data(use_csv=True)
     path = os.path.join(data_path, 'queries.txt')
     queries = generate_queries_from_file(path)
+    generate_all_query_plots(queries, if_data, condition_gmm=True,
+                             visualize_gmm=False)
     generate_all_query_plots(queries, if_data, condition_gmm=True,
                              visualize_gmm=False, use_geometric=True,
                              suffix='geom')
