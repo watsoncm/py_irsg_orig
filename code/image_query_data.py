@@ -75,8 +75,7 @@ class ConditionedIRSGMM(object):
 
 class ImageQueryData(object):
     def __init__(self, query, query_id, image_id, if_data, compute_gt=True,
-                 obj_weight=1./3., attr_weight=1./3., pred_weight=1./3.,
-                 use_geometric=False, use_attributes=False):
+                 pred_weight=0.5, use_geometric=False):
         self.query = query
         self.query_id = query_id
         query_annos = query.annotations
@@ -88,10 +87,6 @@ class ImageQueryData(object):
         self.query_sub = data_utils.make_array(query_sub_data.names)[0]
         self.query_pred = query_triple.predicate
         self.query_obj = data_utils.make_array(query_obj_data.names)[0]
-        attr_triples = data_utils.make_array(query_annos.unary_triples)
-        attributes = data_utils.get_attributes(
-            attr_triples, self.query_sub_id, self.query_obj_id)
-        self.query_sub_attrs, self.query_obj_attrs = attributes
 
         self.image = if_data.vg_data[image_id]
         self.image_id = image_id
@@ -114,48 +109,26 @@ class ImageQueryData(object):
         self.initialized_ = False
         self.compute_gt = compute_gt
         self.use_geometric = use_geometric
-
-        if not np.isclose(obj_weight + attr_weight + pred_weight, 1.0):
-            raise ValueError('object, attribute, and relationship weights '
-                             'must add to unity')
-        self.obj_weight = obj_weight
-        self.attr_weight = attr_weight
+        self.obj_weight = 1 - pred_weight
         self.pred_weight = pred_weight
 
-    def triple_matches(self, trip_sub, trip_pred, trip_obj,
-                       sub_attrs, obj_attrs):
-        has_sub_attrs = np.all([sub_attr in sub_attrs
-                                for sub_attr in self.query_sub_attrs])
-        has_obj_attrs = np.all([obj_attr in obj_attrs
-                                for obj_attr in self.query_obj_attrs])
-        return (trip_sub == self.query_sub and
-                trip_pred == self.query_pred and
-                trip_obj == self.query_obj and
-                has_sub_attrs and
-                has_obj_attrs)
+    def triple_matches(self, trip_sub, trip_pred, trip_obj):
+        return ((trip_sub, trip_pred, trip_obj) ==
+                (self.query_sub, self.query_pred, self.query_obj))
 
     def get_image_ids(self):
         image_annos = self.image_annotations
-        unary_triples = data_utils.make_array(image_annos.unary_triples)
         binary_triples = data_utils.make_array(image_annos.binary_triples)
         for triple in binary_triples:
             trip_sub, trip_pred, trip_obj = data_utils.get_text_parts(
                 self.image, triple)
-            sub_attrs, obj_attrs = data_utils.get_attributes(
-                unary_triples, triple.subject, triple.object)
-            if (self.triple_matches(trip_sub, trip_pred, trip_obj,
-                                    sub_attrs, obj_attrs)):
+            if self.triple_matches(trip_sub, trip_pred, trip_obj):
                 return triple.subject, triple.object
         return None, None
 
     def get_query_text(self):
-        sub_prefix = (', '.join(self.query_sub_attrs) + ' '
-                      if len(self.query_sub_attrs) > 0 else '')
-        obj_prefix = (', '.join(self.query_obj_attrs) + ' '
-                      if len(self.query_obj_attrs) > 0 else '')
-        return '{}{} {} {}{}'.format(sub_prefix, self.query_sub,
-                                     self.query_pred,
-                                     obj_prefix, self.query_obj)
+        return '{} {} {}'.format(
+            self.query_sub, self.query_pred, self.query_obj)
 
     @staticmethod
     def get_iou(bbox_a, bbox_b):
@@ -237,33 +210,6 @@ class ImageQueryData(object):
             log_pots = [-np.log(pot + eps) for pot in model_pots]
             log_pots.extend([None, None])
         return log_pots
-
-    def get_attr_scores(self):
-        sub_attr_pot_ids = [self.class_to_idx['atr:' + attr] - 1
-                            for attr in self.query_sub_attrs]
-        obj_attr_pot_ids = [self.class_to_idx['atr:' + attr] - 1
-                            for attr in self.query_obj_attrs]
-        model_sub_attr_pots, model_obj_attr_pots = [], []
-        if self.compute_gt:
-            close_sub_attr_pots, close_obj_attr_pots = [], []
-        else:
-            close_sub_attr_pots, close_obj_attr_pots = None, None
-
-        eps = np.finfo(np.float).eps
-        for pot_id in sub_attr_pot_ids:
-            model_pot = self.image_scores[pot_id][self.model_sub_bbox_id]
-            model_sub_attr_pots.append(-np.log(model_pot + eps))
-            if self.compute_gt:
-                gt_pot = self.image_scores[pot_id][self.close_sub_bbox_id]
-                close_sub_attr_pots.append(-np.log(gt_pot + eps))
-        for pot_id in obj_attr_pot_ids:
-            model_pot = self.image_scores[pot_id][self.model_obj_bbox_id]
-            model_obj_attr_pots.append(-np.log(model_pot + eps))
-            if self.compute_gt:
-                gt_pot = self.image_scores[pot_id][self.close_obj_bbox_id]
-                close_obj_attr_pots.append(-np.log(gt_pot + eps))
-        return (model_sub_attr_pots, model_obj_attr_pots,
-                close_sub_attr_pots, close_obj_attr_pots)
 
     def get_pred_model(self):
         pred_models = self.if_data.relationship_models
@@ -429,8 +375,6 @@ class ImageQueryData(object):
             model_total_pot = self.obj_weight * (self.model_sub_pot +
                                                  self.model_obj_pot)
             model_total_pot += self.pred_weight * self.model_pred_score
-            all_attr_pots = self.model_sub_attr_pots + self.model_obj_attr_pots
-            model_total_pot += self.attr_weight * sum(all_attr_pots)
         if self.compute_gt:
             if self.use_geometric:
                 gt_total_pot = np.sqrt(max(0, self.close_sub_pot) *
@@ -444,10 +388,6 @@ class ImageQueryData(object):
                 close_total_pot = self.obj_weight * (self.close_sub_pot +
                                                      self.close_obj_pot)
                 close_total_pot += self.pred_weight * self.close_pred_score
-                close_addr_total = sum(self.close_sub_attr_pots +
-                                       self.close_obj_attr_pots)
-                gt_total_pot += self.attr_weight * close_addr_total
-                close_total_pot += self.attr_weight * close_addr_total
         else:
             close_total_pot, gt_total_pot = None, None
 
@@ -457,7 +397,6 @@ class ImageQueryData(object):
         if not self.compute_gt:
             return None, None
         image_annos = self.image.annotations
-        unary_triples = data_utils.make_array(image_annos.unary_triples)
         binary_triples = data_utils.make_array(image_annos.binary_triples)
         model_sub_bbox = self.sub_boxes[self.model_sub_bbox_id]
         model_obj_bbox = self.obj_boxes[self.model_obj_bbox_id]
@@ -467,10 +406,7 @@ class ImageQueryData(object):
         for triple in binary_triples:
             trip_sub, trip_pred, trip_obj = data_utils.get_text_parts(
                 self.image, triple)
-            sub_attrs, obj_attrs = data_utils.get_attributes(
-                unary_triples, triple.subject, triple.object)
-            if (self.triple_matches(trip_sub, trip_pred, trip_obj,
-                                    sub_attrs, obj_attrs)):
+            if self.triple_matches(trip_sub, trip_pred, trip_obj):
                 sub = image_objects[triple.subject]
                 obj = image_objects[triple.object]
                 sub_bbox = data_utils.make_bbox(sub.bbox)
@@ -494,9 +430,6 @@ class ImageQueryData(object):
         (self.model_sub_pot, self.model_obj_pot,
          self.close_sub_pot, self.close_obj_pot) = self.get_obj_scores()
         if not self.use_geometric:
-            (self.model_sub_attr_pots, self.model_obj_attr_pots,
-             self.close_sub_attr_pots,
-             self.close_obj_attr_pots) = self.get_attr_scores()
             if use_relationships:
                 self.pred_model, self.pred_model_name = self.get_pred_model()
                 if self.pred_model is None:
@@ -614,37 +547,6 @@ class ImageQueryData(object):
             ax2.text(0.98, 1.03, iou_text, horizontalalignment='right',
                      verticalalignment='bottom', **ax2_params)
 
-        # Extract attribute energy text
-        if not self.use_geometric:
-            attr_format = '        {} -> {}: {:.6f}'
-            model_attr_lines, gt_attr_lines = [], []
-            if self.compute_gt:
-                for attr, gt_pot in zip(self.query_sub_attrs,
-                                        self.close_sub_attr_pots):
-                    gt_line = attr_format.format(attr, self.query_sub, gt_pot)
-                    gt_attr_lines.append(gt_line)
-                for attr, gt_pot in zip(self.query_obj_attrs,
-                                        self.close_obj_attr_pots):
-                    gt_line = attr_format.format(attr, self.query_obj, gt_pot)
-                    gt_attr_lines.append(gt_line)
-
-            gt_attr_text = ('\n' + '\n'.join(gt_attr_lines)
-                            if len(gt_attr_lines) > 0 else 'N/A')
-
-            for attr, model_pot in zip(self.query_sub_attrs,
-                                       self.model_sub_attr_pots):
-                model_line = attr_format.format(
-                    attr, self.query_sub, model_pot)
-                model_attr_lines.append(model_line)
-            for attr, model_pot in zip(self.query_obj_attrs,
-                                       self.model_obj_attr_pots):
-                model_line = attr_format.format(
-                    attr, self.query_obj, model_pot)
-                model_attr_lines.append(model_line)
-
-            model_attr_text = ('\n' + '\n'.join(model_attr_lines)
-                               if len(model_attr_lines) > 0 else 'N/A')
-
         # Add energy information
         if self.use_geometric:
             model_score_format = (
@@ -660,12 +562,11 @@ class ImageQueryData(object):
                 'Object ({}) potential: {:.6f}\n'
                 'Relationship ({}) potential: {:.6f}\n'
                 '(Pre-Platt scaling: {:.6f})\n'
-                'Attribute potentials: {}\n'
                 'Total potential: {:.6f}')
             model_score_parts = (self.query_sub, self.model_sub_pot,
                                  self.query_obj, self.model_obj_pot,
                                  self.pred_model_name, self.model_pred_score,
-                                 self.model_raw_pred_score, model_attr_text,
+                                 self.model_raw_pred_score,
                                  self.model_total_pot)
         model_score_text = model_score_format.format(*model_score_parts)
         ax1.text(0.02, 1.03, model_score_text, horizontalalignment='left',
@@ -686,7 +587,7 @@ class ImageQueryData(object):
                                   self.pred_model_name, self.gt_pred_score,
                                   self.gt_raw_pred_score,
                                   self.close_pred_score,
-                                  self.close_raw_pred_score, gt_attr_text,
+                                  self.close_raw_pred_score,
                                   self.close_total_pot, self.gt_total_pot)
                 gt_score_format = (
                     'Subject ({}) potential (closest box): {:.6f}\n'
@@ -695,7 +596,6 @@ class ImageQueryData(object):
                     '(Pre-Platt scaling: {:.6f})\n'
                     'Relationship potential (closest boxes): {:.6f}\n'
                     '(Pre-Platt scaling: {:.6f})\n'
-                    'Attribute potentials (closest boxes):\n{}\n'
                     'Total potential (using closest boxes): {:.6f}\n'
                     '(Using closest boxes except for relation: {:.6f})')
             gt_score_text = gt_score_format.format(*gt_score_parts)
