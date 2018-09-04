@@ -46,18 +46,12 @@ if __name__ == '__main__':
     ifdata = dp.get_ifdata(use_csv=True, split='train')
     in_paths = [os.path.join(data_path, name) for name in
                 ('obj_rcnn_train', 'obj_rcnn_val',
-                 'attr_rcnn_train', 'attr_rcnn_val',
-                 'obj_rcnn_train_smol', 'obj_rcnn_val_smol',
-                 'attr_rcnn_train_smol', 'attr_rcnn_val_smol')]
+                 'obj_rcnn_train_smol', 'obj_rcnn_val_smol')]
     out_paths = [os.path.join(csv_path, 'datasets', *names) for names in
                  (('psu', 'train', 'obj_files'),
                   ('psu', 'val', 'obj_files'),
-                  ('psu', 'train', 'attr_files'),
-                  ('psu', 'val', 'attr_files'),
                   ('psu-small', 'train', 'obj_files'),
-                  ('psu-small', 'val', 'obj_files'),
-                  ('psu-small', 'train', 'attr_files'),
-                  ('psu-small', 'val', 'attr_files'))]
+                  ('psu-small', 'val', 'obj_files'))]
 
     for in_path, out_path in tqdm(zip(in_paths, out_paths), desc='paths'):
         convert_rcnn_data(in_path, out_path)

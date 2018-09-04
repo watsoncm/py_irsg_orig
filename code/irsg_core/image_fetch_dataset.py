@@ -156,8 +156,7 @@ class CSVImageFetchDataset(ImageFetchDataset):
         return {'platt_models': PlattModels(s_models=s_models)}
 
     def load_data(self, name, is_obj, image_index):
-        abs_index = self.indices[image_index]
-        csv_name = 'irsg_{}.csv'.format(abs_index)
+        csv_name = 'irsg_{}.csv'.format(image_index)
         obj_attr_path = self.obj_path if is_obj else self.attr_path
         csv_file_path = os.path.join(obj_attr_path, name, csv_name)
 
@@ -165,7 +164,8 @@ class CSVImageFetchDataset(ImageFetchDataset):
         class_idx = self.potentials_data['class_to_idx'][full_name] - 1
 
         # load relevant data and assign boxes
-        data_array = np.loadtxt(csv_file_path, delimiter=',')
+        raw_data_array = np.loadtxt(csv_file_path, delimiter=',')
+        data_array = np.atleast_2d(raw_data_array)
         image_boxes = self.potentials_data['boxes'][image_index]
         image_boxes[class_idx] = data_array[:, :4]
         image_scores = self.potentials_data['scores'][image_index]

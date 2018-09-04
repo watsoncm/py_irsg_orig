@@ -76,7 +76,7 @@ class ConditionedIRSGMM(object):
 class ImageQueryData(object):
     def __init__(self, query, query_id, image_id, if_data, compute_gt=True,
                  obj_weight=1./3., attr_weight=1./3., pred_weight=1./3.,
-                 use_geometric=False):
+                 use_geometric=False, use_attributes=False):
         self.query = query
         self.query_id = query_id
         query_annos = query.annotations
@@ -107,7 +107,7 @@ class ImageQueryData(object):
         self.sub_class_id = self.class_to_idx['obj:' + self.query_sub] - 1
         self.obj_class_id = self.class_to_idx['obj:' + self.query_obj] - 1
         self.sub_boxes = self.boxes[self.sub_class_id]
-        self.obj_boxes = self.boxes[self.sub_class_id]
+        self.obj_boxes = self.boxes[self.obj_class_id]
         self.sub_scores = self.image_scores[self.sub_class_id]
         self.obj_scores = self.image_scores[self.obj_class_id]
 
@@ -204,8 +204,8 @@ class ImageQueryData(object):
         return (sub_idx, obj_idx, sub_ious[sub_idx], obj_ious[obj_idx])
 
     def get_model_ious(self):
-        model_sub_bbox = self.obj_boxes[self.model_sub_bbox_id]
-        model_obj_bbox = self.sub_boxes[self.model_obj_bbox_id]
+        model_sub_bbox = self.sub_boxes[self.model_sub_bbox_id]
+        model_obj_bbox = self.obj_boxes[self.model_obj_bbox_id]
         sub_iou = self.get_iou(model_sub_bbox, self.image_sub_bbox)
         obj_iou = self.get_iou(model_obj_bbox, self.image_obj_bbox)
         return sub_iou, obj_iou
@@ -216,6 +216,9 @@ class ImageQueryData(object):
             obj_bbox_id = np.argmax(self.obj_scores)
             return sub_bbox_id, obj_bbox_id
         else:
+            print('BOXES')
+            print('sub: {}, obj: {}'.format(len(self.sub_boxes),
+                                            len(self.obj_boxes)))
             gm, _ = ifc.generate_pgm(self.if_data, verbose=False)
             self.gm_energy, best_matches, _ = ifc.do_inference(gm)
             return best_matches[0], best_matches[1]
@@ -430,7 +433,8 @@ class ImageQueryData(object):
             model_total_pot += self.attr_weight * sum(all_attr_pots)
         if self.compute_gt:
             if self.use_geometric:
-                gt_total_pot = np.sqrt(self.close_sub_pot * self.close_obj_pot)
+                gt_total_pot = np.sqrt(max(0, self.close_sub_pot) *
+                                       max(0, self.close_obj_pot))
                 close_total_pot = gt_total_pot
             else:
                 gt_total_pot = self.obj_weight * (self.close_sub_pot +
@@ -624,6 +628,9 @@ class ImageQueryData(object):
                     gt_line = attr_format.format(attr, self.query_obj, gt_pot)
                     gt_attr_lines.append(gt_line)
 
+            gt_attr_text = ('\n' + '\n'.join(gt_attr_lines)
+                            if len(gt_attr_lines) > 0 else 'N/A')
+
             for attr, model_pot in zip(self.query_sub_attrs,
                                        self.model_sub_attr_pots):
                 model_line = attr_format.format(
@@ -634,6 +641,9 @@ class ImageQueryData(object):
                 model_line = attr_format.format(
                     attr, self.query_obj, model_pot)
                 model_attr_lines.append(model_line)
+
+            model_attr_text = ('\n' + '\n'.join(model_attr_lines)
+                               if len(model_attr_lines) > 0 else 'N/A')
 
         # Add energy information
         if self.use_geometric:
@@ -650,13 +660,12 @@ class ImageQueryData(object):
                 'Object ({}) potential: {:.6f}\n'
                 'Relationship ({}) potential: {:.6f}\n'
                 '(Pre-Platt scaling: {:.6f})\n'
-                'Attribute potentials:\n{}\n'
+                'Attribute potentials: {}\n'
                 'Total potential: {:.6f}')
             model_score_parts = (self.query_sub, self.model_sub_pot,
                                  self.query_obj, self.model_obj_pot,
                                  self.pred_model_name, self.model_pred_score,
-                                 self.model_raw_pred_score,
-                                 '\n'.join(model_attr_lines),
+                                 self.model_raw_pred_score, model_attr_text,
                                  self.model_total_pot)
         model_score_text = model_score_format.format(*model_score_parts)
         ax1.text(0.02, 1.03, model_score_text, horizontalalignment='left',
@@ -677,8 +686,7 @@ class ImageQueryData(object):
                                   self.pred_model_name, self.gt_pred_score,
                                   self.gt_raw_pred_score,
                                   self.close_pred_score,
-                                  self.close_raw_pred_score,
-                                  '\n'.join(gt_attr_lines),
+                                  self.close_raw_pred_score, gt_attr_text,
                                   self.close_total_pot, self.gt_total_pot)
                 gt_score_format = (
                     'Subject ({}) potential (closest box): {:.6f}\n'

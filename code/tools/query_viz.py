@@ -86,7 +86,7 @@ def generate_test_plot(queries, if_data):
     iqd.generate_plot()
 
 
-def gen_sro(sub, pred, obj):
+def gen_sro(sub, pred, obj, use_attrs=False):
     sub_struct, obj_struct = siom.mat_struct(), siom.mat_struct()
     sub_struct.__setattr__('names', sub)
     obj_struct.__setattr__('names', obj)
@@ -112,30 +112,33 @@ def _get_unary_triple(attr, is_sub):
     return attr_struct
 
 
-def gen_srao(sub, pred, attr, obj):
+def gen_srao(sub, pred, attr, obj, use_attrs=False):
     query_struct = gen_sro(sub, pred, obj)
     obj_attr_struct = _get_unary_triple(attr, False)
-    query_struct.__setattr__('unary_triples', obj_attr_struct)
+    if use_attrs:
+        query_struct.__setattr__('unary_triples', obj_attr_struct)
     return query_struct
 
 
-def gen_asro(attr, sub, pred, obj):
+def gen_asro(attr, sub, pred, obj, use_attrs=False):
     query_struct = gen_sro(sub, pred, obj)
     sub_attr_struct = _get_unary_triple(attr, True)
-    query_struct.__setattr__('unary_triples', sub_attr_struct)
+    if use_attrs:
+        query_struct.__setattr__('unary_triples', sub_attr_struct)
     return query_struct
 
 
-def gen_asrao(sub_attr, sub, pred, obj_attr, obj):
+def gen_asrao(sub_attr, sub, pred, obj_attr, obj, use_attrs=False):
     query_struct = gen_sro(sub, pred, obj)
-    sub_attr_struct = _get_unary_triple(sub_attr, True)
-    obj_attr_struct = _get_unary_triple(obj_attr, False)
-    query_struct.__setattr__('unary_triples', np.array(
-        [sub_attr_struct, obj_attr_struct]))
+    if use_attrs:
+        sub_attr_struct = _get_unary_triple(sub_attr, True)
+        obj_attr_struct = _get_unary_triple(obj_attr, False)
+        query_struct.__setattr__('unary_triples', np.array(
+            [sub_attr_struct, obj_attr_struct]))
     return query_struct
 
 
-def generate_queries_from_file(path):
+def generate_queries_from_file(path, use_attrs=False):
     """Read queries from a specially-formatted file."""
     queries = []
     gen_dict = {'(sro)': gen_sro,
@@ -147,7 +150,8 @@ def generate_queries_from_file(path):
             query_struct = siom.mat_struct()
             parts = [part.replace('_', ' ') for part in line.split()]
             text_parts, gen_func = parts[:-1], gen_dict[parts[-1]]
-            query_struct.annotations = gen_func(*text_parts)
+            query_struct.annotations = gen_func(
+                *text_parts, use_attrs=use_attrs)
             queries.append(query_struct)
     return queries
 
