@@ -45,22 +45,18 @@ def convert_rcnn_data(input_path, output_path):
 if __name__ == '__main__':
     ifdata = dp.get_ifdata(use_csv=True, split='train')
     in_paths = [os.path.join(data_path, name) for name in
-                ('obj_rcnn_train', 'obj_rcnn_val',
-                 'obj_rcnn_train_smol', 'obj_rcnn_val_smol')]
+                ('obj_rcnn_train_smol', 'obj_rcnn_val_smol')]
     out_paths = [os.path.join(csv_path, 'datasets', *names) for names in
                  (('psu', 'train', 'obj_files'),
-                  ('psu', 'val', 'obj_files'),
-                  ('psu-small', 'train', 'obj_files'),
-                  ('psu-small', 'val', 'obj_files'))]
+                  ('psu', 'val', 'obj_files'))]
 
     for in_path, out_path in tqdm(zip(in_paths, out_paths), desc='paths'):
         convert_rcnn_data(in_path, out_path)
 
     train_indices = data_utils.get_indices(data_path, 'train')
     val_indices = data_utils.get_indices(data_path, 'val')
-    for dataset in ('psu', 'psu-small'):
-        data_path = os.path.join(csv_path, 'datasets', dataset)
-        with open(os.path.join(data_path, 'train', 'index.txt'), 'w') as f:
-            f.write('\n'.join([str(index) for index in train_indices]))
-        with open(os.path.join(data_path, 'val', 'index.txt'), 'w') as f:
-            f.write('\n'.join([str(index) for index in val_indices]))
+    data_path = os.path.join(csv_path, 'datasets', 'psu')
+    with open(os.path.join(data_path, 'train', 'index.txt'), 'w') as f:
+        f.write('\n'.join([str(index) for index in train_indices]))
+    with open(os.path.join(data_path, 'val', 'index.txt'), 'w') as f:
+        f.write('\n'.join([str(index) for index in val_indices]))

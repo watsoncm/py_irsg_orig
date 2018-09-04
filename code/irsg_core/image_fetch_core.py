@@ -211,7 +211,6 @@ def generate_pgm(if_data, verbose=False):
       unary_dets.append(detections[:,4] + eps)
       log_scores = -np.log(detections[:,4] + eps)
       fid = gm.addFunction(log_scores)
-      print('{} ({}) -> {}'.format(pgm_ix, object_name, log_scores.shape))
     else:
       if verbose: print "  skipping {0}, no detection available (qry_ix:{1})".format(object_name, obj_ix)
       continue
@@ -381,9 +380,6 @@ def generate_pgm(if_data, verbose=False):
     # add binary functions to the GM
     detail = "binary functions for relationship '%s'" % (bin_trip_key)
     if verbose: print("    adding %s" % detail)
-    print('{} ({}), {} ({}) -> {}'.format(sub_pgm_ix, subject_name,
-                                          obj_pgm_ix, object_name,
-                                          bin_functions.shape))
     fid = gm.addFunction(bin_functions)
     
     var_indices = [sub_pgm_ix, obj_pgm_ix]

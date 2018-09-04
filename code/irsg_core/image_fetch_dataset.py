@@ -57,28 +57,23 @@ class CSVImageFetchDataset(ImageFetchDataset):
         self.obj_path = os.path.join(self.split_path, 'obj_files')
         self.rel_path = os.path.join(self.split_path, 'rel_files')
 
-        # get class data
-        classes, class_to_idx = self.read_csv_class_data()
-        self.potentials_data['classes'] = classes
-        self.potentials_data['class_to_idx'] = class_to_idx
-
         # get vg_data
         with open(os.path.join(self.split_path, 'index.txt')) as f:
             self.indices = [int(line) for line in f.read().splitlines()]
         self.vg_data = self.load_vg_data(vg_data)
 
         # get box and score data
-        self.n_images = self.vg_data.shape[0]
-        self.n_objs = len(os.listdir(self.obj_path))
-        empty_pots = [[None for _ in range(self.n_objs)]
-                      for _ in range(self.n_images)]
+        self.all_objs = os.listdir(self.obj_path)
+        empty_pots = [[None for _ in self.all_objs] for _ in self.vg_data]
         self.potentials_data['boxes'] = np.array(empty_pots)
         self.potentials_data['scores'] = np.array(empty_pots)
         self.loaded_cache = []
 
-        # get object list
-        self.all_objs = [obj[4:] for obj in class_to_idx.keys()
-                         if 'obj' in obj]
+        # get class data
+        classes = ['obj:{}'.format(name) for name in self.all_objs]
+        class_to_idx = dict(zip(classes, range(len(classes))))
+        self.potentials_data['classes'] = np.array(classes)
+        self.potentials_data['class_to_idx'] = class_to_idx
 
         # get relationship and platt models
         self.relationship_models = self.read_csv_rel_models()
@@ -93,15 +88,6 @@ class CSVImageFetchDataset(ImageFetchDataset):
         else:
             vg_key = 'vg_data_train'
         return vg_data[vg_key][self.indices]
-
-    def read_csv_class_data(self):
-        classes = np.loadtxt(os.path.join(csv_path, 'classes.csv'),
-                             dtype='O', delimiter=',')
-        class_to_idx = np.loadtxt(os.path.join(csv_path, 'class_to_idx.csv'),
-                                  dtype=[('class', 'O'), ('idx', int)],
-                                  delimiter=',')
-        class_to_idx = dict(zip(class_to_idx['class'], class_to_idx['idx']))
-        return classes.reshape(-1), class_to_idx
 
     def read_csv_rel_models(self):
         args = ['gmm_weights', 'gmm_mu', 'gmm_sigma']

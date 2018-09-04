@@ -123,21 +123,14 @@ if __name__ == '__main__':
     indices = data_utils.get_indices(data_path, 'train')
 
     psu_path = os.path.join(csv_path, 'datasets', 'psu')
-    psu_small_path = os.path.join(csv_path, 'datasets', 'psu-small')
-    for path in (psu_path, psu_small_path):
-        obj_train_path = os.path.join(path, 'train', 'obj_files')
-        obj_val_path = os.path.join(path, 'val', 'obj_files')
-        attr_train_path = os.path.join(path, 'train', 'attr_files')
-        attr_val_path = os.path.join(path, 'val', 'attr_files')
-        rel_train_path = os.path.join(path, 'train', 'rel_files')
-        rel_val_path = os.path.join(path, 'val', 'rel_files')
+    obj_train_path = os.path.join(psu_path, 'train', 'obj_files')
+    obj_val_path = os.path.join(psu_path, 'val', 'obj_files')
+    rel_train_path = os.path.join(psu_path, 'train', 'rel_files')
+    rel_val_path = os.path.join(psu_path, 'val', 'rel_files')
 
-        # obj_data = get_rcnn_data(obj_train_path, ifdata, indices,
-        #                          desc='objs')
-        # attr_data = get_rcnn_data(attr_train_path, ifdata, indices,
-        #                           desc='attrs')
-        rel_data = get_gmm_data(rel_train_path, ifdata, indices,
-                                desc='rels')
-        # save_platt_params(attr_data, attr_val_path)
-        # save_platt_params(obj_data, obj_val_path)
-        save_platt_params(rel_data, rel_val_path)
+    obj_data = get_rcnn_data(obj_train_path, ifdata, indices,
+                             desc='objs')
+    rel_data = get_gmm_data(rel_train_path, ifdata, indices,
+                            desc='rels')
+    save_platt_params(obj_data, obj_val_path)
+    save_platt_params(rel_data, rel_val_path)

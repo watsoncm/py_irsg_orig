@@ -12,6 +12,7 @@ from scipy.misc import logsumexp
 from tqdm import tqdm
 
 import gmm_utils
+import pgm_utils
 import data_utils
 import irsg_core.image_fetch_core as ifc
 
@@ -189,10 +190,8 @@ class ImageQueryData(object):
             obj_bbox_id = np.argmax(self.obj_scores)
             return sub_bbox_id, obj_bbox_id
         else:
-            print('BOXES')
-            print('sub: {}, obj: {}'.format(len(self.sub_boxes),
-                                            len(self.obj_boxes)))
-            gm, _ = ifc.generate_pgm(self.if_data, verbose=False)
+            gm, _ = pgm_utils.generate_pgm(
+                self.if_data, pred_weight=self.pred_weight)
             self.gm_energy, best_matches, _ = ifc.do_inference(gm)
             return best_matches[0], best_matches[1]
 
@@ -611,16 +610,14 @@ class ImageQueryData(object):
 
 
 def generate_energy_data(queries, path, if_data, use_geometric=False,
-                         iqd_params=None):
+                         pred_weight=0.5):
     for query_id, query in tqdm(enumerate(queries), total=len(queries)):
         energy_list = []
         for image_id in tqdm(range(len(if_data.vg_data))):
-            if iqd_params is None:
-                iqd_params = {}
             iqd = ImageQueryData(
                 query, query_id, image_id, if_data,
                 use_geometric=use_geometric, compute_gt=False,
-                **iqd_params)
+                pred_weight=pred_weight)
             iqd.compute_potential_data()
             energy_list.append(iqd.model_total_pot)
 

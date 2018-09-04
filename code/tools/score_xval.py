@@ -26,14 +26,10 @@ with open(get_config_path()) as f:
     out_path = cfg_data['file_paths']['output_path']
 
 
-def run_cross_val_test(if_data, queries, path, index,
-                       obj_weight, attr_weight, pred_weight):
+def run_cross_val_test(if_data, queries, path, index, pred_weight):
     """Run a single test on the validation set."""
-    iqd_params = {'obj_weight': obj_weight,
-                  'attr_weight': attr_weight,
-                  'pred_weight': pred_weight}
     image_query_data.generate_energy_data(queries, path, if_data,
-                                          iqd_params=iqd_params)
+                                          pred_weight=pred_weight)
     data_simple = [(path, 'xval {} energies'.format(index))]
     false_neg_path = os.path.join(data_path, 'false_negs.csv')
     false_negs = data_utils.get_false_negs(false_neg_path)
@@ -49,7 +45,7 @@ def cross_validate_simple(if_data, queries, k_val, num_xvals):
     """Do simple cross-validation over triples of IRSG weights."""
     query_format = 'query_energies_xval_{}/'
     result_format = 'pred_weight: {}\nR@{}: {}'
-    pred_weights = np.random.rand(num_xvals)
+    pred_weights = np.arange(0, 1, num_xvals)
     results = []
     recalls_at_k = []
     for index, pred_weight in tqdm(

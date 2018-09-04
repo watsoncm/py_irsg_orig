@@ -97,22 +97,18 @@ def parse_queries(query_path):
 
 if __name__ == '__main__':
     ifdata = dp.get_ifdata(use_csv=True, split='train')
-    smol_objs = os.listdir(os.path.join(csv_path, 'datasets', 'psu-small',
-                                        'train', 'obj_files'))
+    obj_list = os.listdir(
+        os.path.join(csv_path, 'datasets', 'psu', 'train', 'obj_files'))
     output_paths = [os.path.join(csv_path, 'datasets', *names) for names in
                     (('psu', 'train', 'rel_files'),
-                     ('psu', 'val', 'rel_files'),
-                     ('psu-small', 'train', 'rel_files'),
-                     ('psu-small', 'val', 'rel_files'))]
-    splits = ['train', 'val', 'train', 'val']
+                     ('psu', 'val', 'rel_files'))]
+    splits = ['train', 'val']
     query_path = os.path.join(data_path, 'queries.txt')
-    smol_rels = parse_queries(query_path)
-    rels = [None, None, smol_rels, smol_rels]
+    rel_list = parse_queries(query_path)
 
-    for output_path, split, rels in tqdm(zip(output_paths, splits, rels),
-                                         desc='paths'):
+    for output_path, split in tqdm(zip(output_paths, splits), desc='paths'):
         indices = data_utils.get_indices(data_path, split)
-        rel_dict = get_binary_model_data(ifdata, indices, rels=rels)
+        rel_dict = get_binary_model_data(ifdata, indices, rels=rel_list)
         for text, bbox_pairs in rel_dict.iteritems():
             gmm_data = train_gmm(bbox_pairs)
             gmm_utils.save_gmm_data(text, output_path, *gmm_data)
