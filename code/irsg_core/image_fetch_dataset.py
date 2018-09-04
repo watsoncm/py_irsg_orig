@@ -24,8 +24,6 @@ class ImageFetchDataset(object):
 
         self.current_image_num = -1
         self.object_detections = None
-        self.attribute_detections = None
-        self.per_object_attributes = None
         self.image_filename = ""
         self.current_sg_query = None
         self.is_csv = False
@@ -36,16 +34,11 @@ class ImageFetchDataset(object):
             self.object_detections = ifu.get_object_detections(
                 self.current_image_num, self.potentials_data,
                 self.platt_models)
-            self.attribute_detections = ifu.get_attribute_detections(
-                self.current_image_num, self.potentials_data,
-                self.platt_models)
             self.image_filename = self.base_image_path + os.path.basename(
                 self.vg_data[self.current_image_num].image_path)
 
         if sg_query is not None or sg_query != self.current_sg_query:
             self.current_sg_query = sg_query
-            self.per_object_attributes = ifu.get_object_attributes(
-                self.current_sg_query)
 
 
 class CSVImageFetchDataset(ImageFetchDataset):
@@ -62,7 +55,6 @@ class CSVImageFetchDataset(ImageFetchDataset):
         self.dataset_path = os.path.join(csv_path, 'datasets', dataset)
         self.split_path = os.path.join(self.dataset_path, split)
         self.obj_path = os.path.join(self.split_path, 'obj_files')
-        self.attr_path = os.path.join(self.split_path, 'attr_files')
         self.rel_path = os.path.join(self.split_path, 'rel_files')
 
         # get class data
@@ -78,18 +70,15 @@ class CSVImageFetchDataset(ImageFetchDataset):
         # get box and score data
         self.n_images = self.vg_data.shape[0]
         self.n_objs = len(os.listdir(self.obj_path))
-        self.n_attrs = len(os.listdir(self.attr_path))
-        empty_pots = [[None for _ in range(self.n_objs + self.n_attrs)]
+        empty_pots = [[None for _ in range(self.n_objs)]
                       for _ in range(self.n_images)]
         self.potentials_data['boxes'] = np.array(empty_pots)
         self.potentials_data['scores'] = np.array(empty_pots)
         self.loaded_cache = []
 
-        # get attribute and object lists
+        # get object list
         self.all_objs = [obj[4:] for obj in class_to_idx.keys()
                          if 'obj' in obj]
-        self.all_attrs = [attr[4:] for attr in class_to_idx.keys()
-                          if 'atr' in attr]
 
         # get relationship and platt models
         self.relationship_models = self.read_csv_rel_models()
@@ -143,12 +132,11 @@ class CSVImageFetchDataset(ImageFetchDataset):
         PlattModels = namedtuple('PlattModels', ['s_models'])
         ModelDict = namedtuple('ModelList', ['serialization'])
         Serialization = namedtuple('Serialization', ['keys', 'values'])
-        for path, prefix in ((self.attr_path, 'atr'), (self.obj_path, 'obj')):
-            for name in os.listdir(path):
-                with open(os.path.join(path, name, 'platt.csv')) as f:
-                    platt_a, platt_b = [float(v) for v in f.read().split(',')]
-                platt_array = np.array([platt_a, platt_b, np.nan, np.nan])
-                platt_data['{}:{}'.format(prefix, name)] = platt_array
+        for name in os.listdir(self.obj_path):
+            with open(os.path.join(self.obj_path, name, 'platt.csv')) as f:
+                platt_a, platt_b = [float(v) for v in f.read().split(',')]
+            platt_array = np.array([platt_a, platt_b, np.nan, np.nan])
+            platt_data['obj:{}'.format(name)] = platt_array
 
         keys, values = zip(*platt_data.items())
         serialization = Serialization(keys=keys, values=values)
@@ -157,10 +145,8 @@ class CSVImageFetchDataset(ImageFetchDataset):
 
     def load_data(self, name, is_obj, image_index):
         csv_name = 'irsg_{}.csv'.format(image_index)
-        obj_attr_path = self.obj_path if is_obj else self.attr_path
-        csv_file_path = os.path.join(obj_attr_path, name, csv_name)
-
-        full_name = ('obj:' if is_obj else 'atr:') + name
+        csv_file_path = os.path.join(self.obj_path, name, csv_name)
+        full_name = 'obj:{}'.format(name)
         class_idx = self.potentials_data['class_to_idx'][full_name] - 1
 
         # load relevant data and assign boxes
@@ -176,21 +162,12 @@ class CSVImageFetchDataset(ImageFetchDataset):
             obj_names = (self.all_objs if load_all else
                          [np.array(obj.names).reshape(-1)[0]
                           for obj in sg_query.objects])
-            attr_names = (self.all_attrs if load_all else
-                          [attr_name for _, attr_name
-                           in ifu.get_object_attributes(sg_query)])
             for obj in obj_names:
                 if (obj, image_index) not in self.loaded_cache:
                     if ('obj:{}'.format(obj) in
                             self.potentials_data['classes'] or load_all):
                         self.load_data(obj, True, image_index)
                         self.loaded_cache.append((obj, image_index))
-            for attr in attr_names:
-                if (attr, image_index) not in self.loaded_cache:
-                    if ('atr:{}'.format(attr) in
-                            self.potentials_data['classes'] or load_all):
-                        self.load_data(attr, False, image_index)
-                        self.loaded_cache.append((attr, image_index))
 
     def configure(self, image_index, sg_query, load_all=False):
         if image_index != self.current_image_num:

@@ -48,23 +48,19 @@ def run_cross_val_test(if_data, queries, path, index,
 def cross_validate_simple(if_data, queries, k_val, num_xvals):
     """Do simple cross-validation over triples of IRSG weights."""
     query_format = 'query_energies_xval_{}/'
-    result_format = ('obj_weight: {}\nattr_weight: {}\n'
-                     'pred_weight: {}\nR@{}: {}')
-    weights = np.array([np.random.rand(3) for _ in range(num_xvals)])
-    weights /= np.sum(weights, axis=1)[:, np.newaxis]
+    result_format = 'pred_weight: {}\nR@{}: {}'
+    pred_weights = np.random.rand(num_xvals)
     results = []
     recalls_at_k = []
-    for index, weights in tqdm(enumerate(weights), total=len(weights),
-                               desc='xval'):
-        obj_weight, attr_weight, pred_weight = weights
+    for index, pred_weight in tqdm(
+            enumerate(pred_weights), total=pred_weights.size, desc='xval'):
         batch_path = os.path.join(out_path, query_format.format(index))
         if not os.path.exists(batch_path):
             os.mkdir(batch_path)
         recalls = run_cross_val_test(if_data, queries, batch_path,
-                                     index, *weights)
+                                     index, pred_weight)
         recalls_at_k.append(recalls[k_val])
-        result = result_format.format(weights[0], weights[1],
-                                      weights[2], K, recalls[K])
+        result = result_format.format(pred_weight, k_val, recalls[k_val])
         results.append(result)
         recalls_at_k.append(recalls[k_val])
         with open(os.path.join(batch_path, 'results.txt'), 'w') as f:
@@ -106,8 +102,6 @@ def cross_validate_tune_rcnns(if_data, k_val, iou_thresh=0.5):
         csv_writer = csv.writer(f)
         for name, auc_score in auc_scores.iteritems():
             csv_writer.writerow((name, auc_score))
-
-        f.write()
 
 
 if __name__ == '__main__':
