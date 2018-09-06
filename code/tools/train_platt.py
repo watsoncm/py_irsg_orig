@@ -16,7 +16,7 @@ from image_query_data import ImageQueryData
 from config import get_config_path
 
 
-NUM_NEGS = 20
+NUM_NEGS = 15
 
 with open(get_config_path()) as f:
     cfg_data = json.load(f)
@@ -69,7 +69,7 @@ def get_gmm_data(path, ifdata, image_indices, negs_per_image=10, desc=None):
         scores = []
         gts = []
         gmm_params = gmm_utils.load_gmm_data(rel_name, path)
-        for image_index in tqdm(image_indices, desc='images'):  # TODO: REM
+        for image_index in tqdm(image_indices, desc='images'):
             image_data = ifdata.vg_data[image_index]
             gt_relations = []
             for triple in image_data.annotations.binary_triples:
@@ -105,11 +105,11 @@ def get_gmm_data(path, ifdata, image_indices, negs_per_image=10, desc=None):
 def save_platt_params(data, path):
     """Save the given Platt scaling parameters."""
     for name, (scores, gts) in data.iteritems():
-        lr = linear_model.LogisticRegression()
+        lr = linear_model.LogisticRegression(class_weight='balanced')
         score_array, gt_array = np.array(scores).reshape(-1, 1), np.array(gts)
         try:
             lr.fit(score_array, gt_array)
-            coef, intercept = lr.coef_[0][0], lr.intercept_[0]
+            coef, intercept = -lr.coef_[0][0], -lr.intercept_[0]
         except ValueError:
             coef, intercept = 0.0, float(gts[0])
         try:
@@ -128,9 +128,9 @@ if __name__ == '__main__':
     rel_train_path = os.path.join(psu_path, 'train', 'rel_files')
     rel_val_path = os.path.join(psu_path, 'val', 'rel_files')
 
-    obj_data = get_rcnn_data(obj_train_path, ifdata, indices,
-                             desc='objs')
+    # obj_data = get_rcnn_data(obj_train_path, ifdata, indices,
+    #                          desc='objs')
     rel_data = get_gmm_data(rel_train_path, ifdata, indices,
-                            desc='rels')
-    save_platt_params(obj_data, obj_val_path)
+                            desc='rels', negs_per_image=NUM_NEGS)
+    # save_platt_params(obj_data, obj_val_path)
     save_platt_params(rel_data, rel_val_path)

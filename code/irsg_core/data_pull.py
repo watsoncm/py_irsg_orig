@@ -7,7 +7,8 @@ from config import get_config_path
 with open(get_config_path()) as cfg_file:
     cfg_data = json.load(cfg_file)
     out_path = cfg_data['file_paths']['output_path']
-    img_path = cfg_data['file_paths']['image_path']
+    test_img_path = cfg_data['file_paths']['test_image_path']
+    train_img_path = cfg_data['file_paths']['train_image_path']
     mat_path = cfg_data['file_paths']['mat_path']
     csv_path = cfg_data['file_paths']['csv_path']
 
@@ -25,9 +26,10 @@ def _load(dataset='stanford', split='test', use_csv=False):
                                 get_bin_mod=not use_csv,
                                 get_platt_mod=not use_csv)
         vgd, potentials, platt_mod, bin_mod, queries = data
+        img_path = test_img_path if split == 'test' else train_img_path
         if use_csv:
-            ifdata = ifd.CSVImageFetchDataset(dataset, split, vgd, img_path,
-                                              csv_path)
+            ifdata = ifd.CSVImageFetchDataset(
+                dataset, split, vgd,  img_path, csv_path)
         else:
             if dataset != 'stanford':
                 raise ValueError('Dataset {} invalid for loading without CSV'

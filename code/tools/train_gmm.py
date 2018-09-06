@@ -34,11 +34,12 @@ def get_binary_model_data(ifdata, indices, rels=None):
     models, small_models = defaultdict(list), defaultdict(list)
     for text_parts, bbox_pairs in all_models.iteritems():
         text = '_'.join(text_parts).replace(' ', '_')
-        generic_text = '*_{}_*'.format(text_parts[1].replace(' ', '_'))
+        generic_parts = ('*', text_parts[1], '*')
+        generic_text = '_'.join(generic_parts).replace(' ', '_')
         rel_model_names = ifdata.relationship_models.keys()
-        if text in rel_model_names:
+        if text in rel_model_names and text_parts in rels:
             models[text] = bbox_pairs
-        elif generic_text in rel_model_names:
+        elif generic_text in rel_model_names and generic_parts in rels:
             small_models[generic_text].extend(bbox_pairs)
 
     models.update(small_models)
@@ -63,7 +64,6 @@ def train_gmm(bbox_pairs):
     rel_width, rel_height = obj_w / sub_w, obj_h / sub_h
     features = np.column_stack((rel_center_x, rel_center_y,
                                 rel_width, rel_height))
-
     while features.shape[0] < 3:
         features = np.vstack((features, features[-1, :]))
 
@@ -97,18 +97,16 @@ def parse_queries(query_path):
 
 if __name__ == '__main__':
     ifdata = dp.get_ifdata(use_csv=True, split='train')
-    obj_list = os.listdir(
-        os.path.join(csv_path, 'datasets', 'psu', 'train', 'obj_files'))
-    output_paths = [os.path.join(csv_path, 'datasets', *names) for names in
-                    (('psu', 'train', 'rel_files'),
-                     ('psu', 'val', 'rel_files'))]
-    splits = ['train', 'val']
+    output_paths = [os.path.join(csv_path, 'datasets', 'psu',
+                                 split, 'rel_files')
+                    for split in ('train', 'val')]
     query_path = os.path.join(data_path, 'queries.txt')
     rel_list = parse_queries(query_path)
 
-    for output_path, split in tqdm(zip(output_paths, splits), desc='paths'):
-        indices = data_utils.get_indices(data_path, split)
-        rel_dict = get_binary_model_data(ifdata, indices, rels=rel_list)
-        for text, bbox_pairs in rel_dict.iteritems():
-            gmm_data = train_gmm(bbox_pairs)
+    indices = data_utils.get_indices(data_path, 'train')
+    rel_dict = get_binary_model_data(ifdata, indices, rels=rel_list)
+    for text, bbox_pairs in rel_dict.iteritems():
+        print('text: {}'.format(text))
+        gmm_data = train_gmm(bbox_pairs)
+        for output_path in output_paths:
             gmm_utils.save_gmm_data(text, output_path, *gmm_data)

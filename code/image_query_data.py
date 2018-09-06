@@ -110,7 +110,7 @@ class ImageQueryData(object):
         self.initialized_ = False
         self.compute_gt = compute_gt
         self.use_geometric = use_geometric
-        self.obj_weight = 1 - pred_weight
+        self.obj_weight = 1.0 - pred_weight
         self.pred_weight = pred_weight
 
     def triple_matches(self, trip_sub, trip_pred, trip_obj):
@@ -611,9 +611,10 @@ class ImageQueryData(object):
 
 def generate_energy_data(queries, path, if_data, use_geometric=False,
                          pred_weight=0.5):
-    for query_id, query in tqdm(enumerate(queries), total=len(queries)):
+    for query_id, query in tqdm(
+            enumerate(queries), total=len(queries), desc='query'):
         energy_list = []
-        for image_id in tqdm(range(len(if_data.vg_data))):
+        for image_id in tqdm(range(len(if_data.vg_data)), desc='image'):
             iqd = ImageQueryData(
                 query, query_id, image_id, if_data,
                 use_geometric=use_geometric, compute_gt=False,

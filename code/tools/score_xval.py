@@ -16,8 +16,8 @@ from collections import defaultdict
 from sklearn.metrics import roc_auc_score
 
 
-NUM_XVALS = 5
-K = 10
+WEIGHTS = [0.001, 0.01, 0.1, 0.5, 0.9, 0.99, 0.999]
+K = 5
 
 
 with open(get_config_path()) as f:
@@ -31,21 +31,18 @@ def run_cross_val_test(if_data, queries, path, index, pred_weight):
     image_query_data.generate_energy_data(queries, path, if_data,
                                           pred_weight=pred_weight)
     data_simple = [(path, 'xval {} energies'.format(index))]
-    false_neg_path = os.path.join(data_path, 'false_negs.csv')
-    false_negs = data_utils.get_false_negs(false_neg_path)
-    tp_simple = ifu.get_partial_scene_matches(if_data.vg_data, queries)
-    for query_index, image_index in false_negs:
-        tp_simple[query_index].append(image_index)
-    recalls = data_utils.get_recall_values(data_simple, tp_simple,
+    tp_simple = [list(sublist) for sublist in
+                 ifu.get_partial_scene_matches(if_data.vg_data, queries)]
+    recalls = data_utils.get_recall_values(data_simple, np.array(tp_simple),
                                            len(if_data.vg_data))[0]
     return recalls
 
 
-def cross_validate_simple(if_data, queries, k_val, num_xvals):
+def cross_validate_simple(if_data, queries, k_val, weight_values):
     """Do simple cross-validation over triples of IRSG weights."""
     query_format = 'query_energies_xval_{}/'
     result_format = 'pred_weight: {}\nR@{}: {}'
-    pred_weights = np.arange(0, 1, num_xvals)
+    pred_weights = np.array(weight_values)
     results = []
     recalls_at_k = []
     for index, pred_weight in tqdm(
@@ -55,7 +52,6 @@ def cross_validate_simple(if_data, queries, k_val, num_xvals):
             os.mkdir(batch_path)
         recalls = run_cross_val_test(if_data, queries, batch_path,
                                      index, pred_weight)
-        recalls_at_k.append(recalls[k_val])
         result = result_format.format(pred_weight, k_val, recalls[k_val])
         results.append(result)
         recalls_at_k.append(recalls[k_val])
@@ -104,5 +100,5 @@ if __name__ == '__main__':
     if_data = dp.get_ifdata(dataset='psu', use_csv=True, split='val')
     query_path = os.path.join(data_path, 'queries.txt')
     queries = query_viz.generate_queries_from_file(query_path)
-    cross_validate_simple(if_data, queries, K, NUM_XVALS)
+    cross_validate_simple(if_data, queries, K, WEIGHTS)
     # cross_validate_tune_rcnns(if_data, K)

@@ -134,7 +134,6 @@ def get_iou_recall_values(data, ground_truth_map, n_images, show_plot=False,
     all_values = []
     for base_dir, label in data:
         obj_ious = []
-        import pdb; pdb.set_trace()
         for index in range(len(ground_truth_map)):
             csv_name = 'q{:03d}_iou_values.csv'.format(index)
             csv_path = os.path.join(base_dir, csv_name)
@@ -172,10 +171,11 @@ def get_iou_recall_values(data, ground_truth_map, n_images, show_plot=False,
 
 
 def get_false_negs(path):
+    false_negs = []
     with open(path) as f:
         csv_reader = csv.reader(f)
-        false_negs = [(int(query_index), int(image_index))
-                      for query_index, image_index in list(csv_reader)[1:]]
+        for query_index, image_index in list(csv_reader)[1:]:
+            false_negs.append((int(query_index), int(image_index)))
     return false_negs
 
 

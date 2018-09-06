@@ -82,6 +82,8 @@ def generate_pgm(if_data, verbose=False, pred_weight=None):
             eps = np.finfo(float).eps
             unary_dets.append(detections[:, 4] + eps)
             log_scores = -np.log(detections[:, 4] + eps)
+            if pred_weight is not None:
+                log_scores *= (1.0 - pred_weight)
             fid = gm.addFunction(log_scores)
         else:
             if verbose:
@@ -223,6 +225,8 @@ def generate_pgm(if_data, verbose=False, pred_weight=None):
         detail = "binary functions for relationship '%s'" % (bin_trip_key)
         if verbose:
             print('    adding %s' % detail)
+        if pred_weight is not None:
+            bin_functions *= pred_weight
         fid = gm.addFunction(bin_functions)
 
         var_indices = [sub_pgm_ix, obj_pgm_ix]
