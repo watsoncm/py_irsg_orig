@@ -160,23 +160,23 @@ def get_single_image_recall_values(data, ground_truth_map, n_images,
         all_values.append(vals)
 
     for query_index, label_vals in enumerate(zip(*all_values)):
+        plot_handles = []
+        plt.figure(1)
+        plt.grid(True)
+
+        plt.xlabel('k')
+        plt.ylabel('Single image recall at k')
+        plt.title('Query {}'.format(query_index))
+
         for (_, label), vals in zip(data, label_vals):
-            plot_handles = []
-            plt.figure(1)
-            plt.grid(True)
             plot_handle = plt.plot(
                 np.arange(1, len(vals) + 1), vals, label=label)[0]
             plot_handles.append(plot_handle)
+        plt.legend(handles=plot_handles, loc=4)
 
-            plt.xlabel('k')
-            plt.ylabel('Single image recall at k')
-            plt.title('Query {}'.format(query_index))
-
-            plt.legend(handles=plot_handles, loc=4)
-
-            if x_limit > 0:
-                plt.xlim([0, x_limit])
-            plt.ylim([0, 1])
+        if x_limit > 0:
+            plt.xlim([0, x_limit])
+        plt.ylim([0, 1])
 
         if show_plot:
             plt.show()
@@ -187,27 +187,25 @@ def get_single_image_recall_values(data, ground_truth_map, n_images,
     plot_handles = []
     plt.figure(1)
     plt.grid(True)
+    plt.xlabel('k')
+    plt.ylabel('Single image recall at k')
+    plt.title('Average over all queries'.format(query_index))
 
     for (_, label), label_data in zip(data, all_values):
         vals = np.mean(np.vstack(label_data), axis=0)
         plot_handle = plt.plot(
             np.arange(1, len(vals) + 1), vals, label=label)[0]
         plot_handles.append(plot_handle)
+    plt.legend(handles=plot_handles, loc=4)
 
-        plt.xlabel('k')
-        plt.ylabel('Single image recall at k')
-        plt.title('Average over all queries'.format(query_index))
-        plt.legend(handles=plot_handles, loc=4)
-
-        if x_limit > 0:
-            plt.xlim([0, x_limit])
-        plt.ylim([0, 1])
+    if x_limit > 0:
+        plt.xlim([0, x_limit])
+    plt.ylim([0, 1])
 
     if show_plot:
         plt.show()
     if save_path is not None:
         plt.savefig(os.path.join(save_path, 'query_average.png'))
-
     return all_values
 
 

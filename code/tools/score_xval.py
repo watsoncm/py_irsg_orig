@@ -23,6 +23,7 @@ K = 5
 with open(get_config_path()) as f:
     cfg_data = json.load(f)
     data_path = cfg_data['file_paths']['mat_path']
+    csv_path = cfg_data['file_paths']['csv_path']
     out_path = cfg_data['file_paths']['output_path']
 
 
@@ -71,15 +72,15 @@ def cross_validate_tune_rcnns(if_data, k_val, iou_thresh=0.5):
     for image_id in tqdm(range(len(if_data.vg_data)), desc='images'):
         if_data.configure(image_id, None, load_all=True)
         image_data = if_data.vg_data[image_id].annotations
-        for name, values in tqdm(if_data.object_detections.iteritems(),
-                                 total=len(if_data.object_detections),
-                                 desc='dets'):
+        for obj_name, values in if_data.object_detections.iteritems():
             gt_bboxes = []
+            name = obj_name[4:]  # remove the "obj_" prefix
             for obj in image_data.objects:
                 if data_utils.make_array(obj.names)[0] == name:
                     gt_bboxes.append(data_utils.make_bbox(obj.bbox))
             for value in values:
-                ious = [ImageQueryData.get_iou(value[:4], gt_bboxes)]
+                ious = [ImageQueryData.get_iou(value[:4], gt_bbox)
+                        for gt_bbox in gt_bboxes]
                 gts[name].append(any([iou >= iou_thresh for iou in ious]))
                 preds[name].append(value[4])
 
@@ -89,11 +90,11 @@ def cross_validate_tune_rcnns(if_data, k_val, iou_thresh=0.5):
         rcnn_preds = preds[name]
         auc_scores[name] = roc_auc_score(rcnn_gts, rcnn_preds)
 
-    import pdb; pdb.set_trace()
-    with open(os.path.join(out_path, 'rcnn_tune_results.txt'), 'w') as f:
+    auc_total = sum(auc_scores.values())
+    with open(os.path.join(csv_path, 'rcnn_weights.csv'), 'w') as f:
         csv_writer = csv.writer(f)
         for name, auc_score in auc_scores.iteritems():
-            csv_writer.writerow((name, auc_score))
+            csv_writer.writerow((name, auc_score / auc_total))
 
 
 if __name__ == '__main__':

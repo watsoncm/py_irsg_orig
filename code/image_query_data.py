@@ -614,7 +614,7 @@ def generate_energy_data(queries, path, if_data, use_geometric=False,
     for query_id, query in tqdm(
             enumerate(queries), total=len(queries), desc='query'):
         energy_list = []
-        for image_id in tqdm(range(len(if_data.vg_data[:10])), desc='image'):
+        for image_id in tqdm(range(len(if_data.vg_data)), desc='image'):
             iqd = ImageQueryData(
                 query, query_id, image_id, if_data,
                 use_geometric=use_geometric, compute_gt=False,
