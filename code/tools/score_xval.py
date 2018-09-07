@@ -76,8 +76,8 @@ def cross_validate_tune_rcnns(if_data, k_val, iou_thresh=0.5):
                                  desc='dets'):
             gt_bboxes = []
             for obj in image_data.objects:
-                if ImageQueryData.make_array(obj.names)[0] == name:
-                    gt_bboxes.append(ImageQueryData.make_bbox(obj.bbox))
+                if data_utils.make_array(obj.names)[0] == name:
+                    gt_bboxes.append(data_utils.make_bbox(obj.bbox))
             for value in values:
                 ious = [ImageQueryData.get_iou(value[:4], gt_bboxes)]
                 gts[name].append(any([iou >= iou_thresh for iou in ious]))
@@ -100,5 +100,5 @@ if __name__ == '__main__':
     if_data = dp.get_ifdata(dataset='psu', use_csv=True, split='val')
     query_path = os.path.join(data_path, 'queries.txt')
     queries = query_viz.generate_queries_from_file(query_path)
-    cross_validate_simple(if_data, queries, K, WEIGHTS)
-    # cross_validate_tune_rcnns(if_data, K)
+    # cross_validate_simple(if_data, queries, K, WEIGHTS)
+    cross_validate_tune_rcnns(if_data, K)

@@ -7,6 +7,8 @@ import image_query_data
 import irsg_core.data_pull as dp
 from config import get_config_path
 
+PRED_WEIGHT = 0.1
+
 
 with open(get_config_path()) as f:
     cfg_data = json.load(f)
@@ -23,8 +25,8 @@ def recall_check(queries, if_data, false_negs):
     geom_energy_path = os.path.join(out_path, 'query_energies_geom/')
     data_simple = [(energy_path, 'factor graph'),
                    (geom_energy_path, 'geometric mean')]
-    data_utils.get_recall_values(data_simple, tp_simple, len(if_data.vg_data),
-                                 show_plot=True)
+    data_utils.get_single_image_recall_values(
+        data_simple, tp_simple, len(if_data.vg_data), show_plot=True)
 
 
 if __name__ == '__main__':
@@ -37,11 +39,18 @@ if __name__ == '__main__':
         os.mkdir(batch_path)
         image_query_data.generate_energy_data(queries, batch_path, if_data)
 
-    geom_batch_path = os.path.join(out_path, 'query_energies_geom/')
-    if not os.path.exists(geom_batch_path):
-        os.mkdir(geom_batch_path)
-        image_query_data.generate_energy_data(
-            queries, geom_batch_path, if_data, use_geometric=True)
+    # geom_batch_path = os.path.join(out_path, 'query_energies_geom/')
+    # if not os.path.exists(geom_batch_path):
+    #     os.mkdir(geom_batch_path)
+    #     image_query_data.generate_energy_data(
+    #         queries, geom_batch_path, if_data, use_geometric=True)
+
+    # weighted_batch_path = os.path.join(out_path, 'query_energies_weighted/')
+    # if not os.path.exists(weighted_batch_path):
+    #     os.mkdir(weighted_batch_path)
+    #     image_query_data.generate_energy_data(
+    #         queries, weighted_batch_path, if_data,
+    #         pred_weight=PRED_WEIGHT)
 
     false_neg_path = os.path.join(data_path, 'false_negs.csv')
     false_negs = data_utils.get_false_negs(false_neg_path)

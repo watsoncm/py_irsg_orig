@@ -614,7 +614,7 @@ def generate_energy_data(queries, path, if_data, use_geometric=False,
     for query_id, query in tqdm(
             enumerate(queries), total=len(queries), desc='query'):
         energy_list = []
-        for image_id in tqdm(range(len(if_data.vg_data)), desc='image'):
+        for image_id in tqdm(range(len(if_data.vg_data[:10])), desc='image'):
             iqd = ImageQueryData(
                 query, query_id, image_id, if_data,
                 use_geometric=use_geometric, compute_gt=False,
@@ -632,7 +632,7 @@ def generate_energy_data(queries, path, if_data, use_geometric=False,
 
 
 def generate_iou_data(queries, path, if_data, use_geometric=False,
-                      iqd_params=None):
+                      iqd_params=None, pred_weight=0.5):
     for query_id, query in tqdm(enumerate(queries), total=len(queries)):
         object_id_list = []
         iou_list = []
@@ -643,7 +643,8 @@ def generate_iou_data(queries, path, if_data, use_geometric=False,
                 iqd_params = {}
             iqd = ImageQueryData(
                 query, query_id, image_id, if_data,
-                use_geometric=use_geometric, **iqd_params)
+                use_geometric=use_geometric,
+                pred_weight=pred_weight, **iqd_params)
             iqd.compute_potential_data()
             object_id_list.extend([iqd.model_sub_bbox_id,
                                    iqd.model_obj_bbox_id])

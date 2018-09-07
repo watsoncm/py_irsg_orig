@@ -91,6 +91,33 @@ def get_r_at_k(base_dir, gt_map, n_images, file_suffix='_energy_values'):
     return k_count / n_queries
 
 
+def get_single_image_r_at_k(base_dir, gt_map, n_images,
+                            file_suffix='_energy_values'):
+    full_negs = [index for index in range(n_images)
+                 if all(index not in gts for gts in gt_map)]
+    recalls = []
+    for query_index, gts in enumerate(gt_map):
+        csv_name = 'q{:03d}{}.csv'.format(query_index, file_suffix)
+        csv_path = os.path.join(base_dir, csv_name)
+        if not os.path.isfile(csv_path):
+            recalls.append([])
+            continue
+        raw_energies = np.genfromtxt(csv_path, delimiter=',', skip_header=1)
+        energies = np.atleast_2d(raw_energies)
+        if energies.size == 0:
+            recalls.append([])
+            continue
+        recall = np.zeros(len(full_negs) + 1, dtype=np.float)
+        for image_index in gts:
+            energy_ix = np.isin(energies[:, 0], full_negs + [image_index])
+            image_energies = energies[energy_ix]
+            sort_ix = np.argsort(image_energies[:, 1])
+            indices = image_energies[sort_ix][:, 0]
+            recall[np.where(indices == image_index)[0][0]:] += 1
+        recalls.append(recall / len(gts))
+    return recalls
+
+
 def get_recall_values(data, ground_truth_map, n_images, show_plot=False,
                       save_path=None, do_holdout=False, x_limit=100):
     gen_plot = show_plot or save_path is not None
@@ -104,7 +131,8 @@ def get_recall_values(data, ground_truth_map, n_images, show_plot=False,
         vals = get_r_at_k(path, ground_truth_map, n_images)
         all_values.append(vals)
         if gen_plot:
-            plot_handle = plt.plot(np.arange(len(vals)), vals, label=label)[0]
+            plot_handle = plt.plot(
+                np.arange(1, len(vals) + 1), vals, label=label)[0]
             plot_handles.append(plot_handle)
 
     if gen_plot:
@@ -120,6 +148,66 @@ def get_recall_values(data, ground_truth_map, n_images, show_plot=False,
         plt.show()
     if save_path is not None:
         plt.savefig(save_path)
+    return all_values
+
+
+def get_single_image_recall_values(data, ground_truth_map, n_images,
+                                   show_plot=False, save_path=None,
+                                   do_holdout=False, x_limit=100):
+    all_values = []
+    for path, label in data:
+        vals = get_single_image_r_at_k(path, ground_truth_map, n_images)
+        all_values.append(vals)
+
+    for query_index, label_vals in enumerate(zip(*all_values)):
+        for (_, label), vals in zip(data, label_vals):
+            plot_handles = []
+            plt.figure(1)
+            plt.grid(True)
+            plot_handle = plt.plot(
+                np.arange(1, len(vals) + 1), vals, label=label)[0]
+            plot_handles.append(plot_handle)
+
+            plt.xlabel('k')
+            plt.ylabel('Single image recall at k')
+            plt.title('Query {}'.format(query_index))
+
+            plt.legend(handles=plot_handles, loc=4)
+
+            if x_limit > 0:
+                plt.xlim([0, x_limit])
+            plt.ylim([0, 1])
+
+        if show_plot:
+            plt.show()
+        if save_path is not None:
+            plt.savefig(os.path.join(
+                save_path, 'q{:03d}.png'.format(query_index)))
+
+    plot_handles = []
+    plt.figure(1)
+    plt.grid(True)
+
+    for (_, label), label_data in zip(data, all_values):
+        vals = np.mean(np.vstack(label_data), axis=0)
+        plot_handle = plt.plot(
+            np.arange(1, len(vals) + 1), vals, label=label)[0]
+        plot_handles.append(plot_handle)
+
+        plt.xlabel('k')
+        plt.ylabel('Single image recall at k')
+        plt.title('Average over all queries'.format(query_index))
+        plt.legend(handles=plot_handles, loc=4)
+
+        if x_limit > 0:
+            plt.xlim([0, x_limit])
+        plt.ylim([0, 1])
+
+    if show_plot:
+        plt.show()
+    if save_path is not None:
+        plt.savefig(os.path.join(save_path, 'query_average.png'))
+
     return all_values
 
 
