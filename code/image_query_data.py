@@ -76,7 +76,7 @@ class ConditionedIRSGMM(object):
 
 class ImageQueryData(object):
     def __init__(self, query, query_id, image_id, if_data, compute_gt=True,
-                 pred_weight=0.5, use_geometric=False):
+                 pred_weight=None, use_geometric=False, rcnn_weights=None):
         self.query = query
         self.query_id = query_id
         query_annos = query.annotations
@@ -110,8 +110,9 @@ class ImageQueryData(object):
         self.initialized_ = False
         self.compute_gt = compute_gt
         self.use_geometric = use_geometric
-        self.obj_weight = 1.0 - pred_weight
+        self.obj_weight = None if pred_weight is None else 1.0 - pred_weight
         self.pred_weight = pred_weight
+        self.rcnn_weights = rcnn_weights
 
     def triple_matches(self, trip_sub, trip_pred, trip_obj):
         return ((trip_sub, trip_pred, trip_obj) ==
@@ -191,24 +192,37 @@ class ImageQueryData(object):
             return sub_bbox_id, obj_bbox_id
         else:
             gm, _ = pgm_utils.generate_pgm(
-                self.if_data, pred_weight=self.pred_weight)
+                self.if_data, pred_weight=self.pred_weight,
+                rcnn_weights=self.rcnn_weights)
             self.gm_energy, best_matches, _ = ifc.do_inference(gm)
             return best_matches[0], best_matches[1]
 
     def get_obj_scores(self):
-        model_sub_pot = self.sub_scores[self.model_sub_bbox_id]
-        model_obj_pot = self.obj_scores[self.model_obj_bbox_id]
         eps = np.finfo(np.float).eps
+        model_sub_pot = -np.log(self.sub_scores[self.model_sub_bbox_id] + eps)
+        model_obj_pot = -np.log(self.obj_scores[self.model_obj_bbox_id] + eps)
+        if self.obj_weight is not None:
+            model_sub_pot *= self.obj_weight
+            model_obj_pot *= self.obj_weight
+        if self.rcnn_weights is not None:
+            model_sub_pot *= self.rcnn_weights[self.query_sub]
+            model_obj_pot *= self.rcnn_weights[self.query_obj]
         model_pots = (model_sub_pot, model_obj_pot)
         if self.compute_gt:
-            close_sub_pot = self.sub_scores[self.close_sub_bbox_id]
-            close_obj_pot = self.obj_scores[self.close_obj_bbox_id]
+            close_sub_pot = -np.log(self.sub_scores[
+                self.close_sub_bbox_id] + eps)
+            close_obj_pot = -np.log(self.obj_scores[
+                self.close_obj_bbox_id] + eps)
+            if self.obj_weight is not None:
+                close_sub_pot *= self.obj_weight
+                close_obj_pot *= self.obj_weight
+            if self.rcnn_weights is not None:
+                close_sub_pot *= self.rcnn_weights[self.query_sub]
+                close_obj_pot *= self.rcnn_weights[self.query_obj]
             close_pots = (close_sub_pot, close_obj_pot)
-            log_pots = [-np.log(pot + eps) for pot in model_pots + close_pots]
         else:
-            log_pots = [-np.log(pot + eps) for pot in model_pots]
-            log_pots.extend([None, None])
-        return log_pots
+            close_pots = (None, None)
+        return model_pots + close_pots
 
     def get_pred_model(self):
         pred_models = self.if_data.relationship_models
@@ -256,6 +270,10 @@ class ImageQueryData(object):
         model_pred_scores = self.score_box_pair(model_sub_bbox,
                                                 model_obj_bbox,
                                                 *pred_params)
+        if self.pred_weight is not None:
+            model_pred_scores = (model_pred_scores[0],
+                                 self.pred_weight * model_pred_scores[1])
+
         if self.compute_gt:
             close_sub_bbox = self.sub_boxes[self.close_sub_bbox_id]
             close_obj_bbox = self.obj_boxes[self.close_obj_bbox_id]
@@ -265,6 +283,11 @@ class ImageQueryData(object):
             gt_pred_scores = self.score_box_pair(self.image_sub_bbox,
                                                  self.image_obj_bbox,
                                                  *pred_params)
+            if self.pred_weight is not None:
+                close_pred_scores = (close_pred_scores[0],
+                                     self.pred_weight * close_pred_scores[1])
+                gt_pred_scores = (gt_pred_scores[0],
+                                  self.pred_weight * gt_pred_scores[1])
         else:
             close_pred_scores, gt_pred_scores = (None, None), (None, None)
         return model_pred_scores, close_pred_scores, gt_pred_scores
@@ -371,22 +394,18 @@ class ImageQueryData(object):
             model_total_pot = np.sqrt(max(0, self.model_sub_pot) *
                                       max(0, self.model_obj_pot))
         else:
-            model_total_pot = self.obj_weight * (self.model_sub_pot +
-                                                 self.model_obj_pot)
-            model_total_pot += self.pred_weight * self.model_pred_score
+            model_total_pot = self.model_sub_pot + self.model_obj_pot
+            model_total_pot += self.model_pred_score
         if self.compute_gt:
             if self.use_geometric:
                 gt_total_pot = np.sqrt(max(0, self.close_sub_pot) *
                                        max(0, self.close_obj_pot))
                 close_total_pot = gt_total_pot
             else:
-                gt_total_pot = self.obj_weight * (self.close_sub_pot +
-                                                  self.close_obj_pot)
-                gt_total_pot += self.pred_weight * self.gt_pred_score
-
-                close_total_pot = self.obj_weight * (self.close_sub_pot +
-                                                     self.close_obj_pot)
-                close_total_pot += self.pred_weight * self.close_pred_score
+                gt_total_pot = self.close_sub_pot + self.close_obj_pot
+                gt_total_pot += self.gt_pred_score
+                close_total_pot = self.close_sub_pot + self.close_obj_pot
+                close_total_pot += self.close_pred_score
         else:
             close_total_pot, gt_total_pot = None, None
 
@@ -610,7 +629,7 @@ class ImageQueryData(object):
 
 
 def generate_energy_data(queries, path, if_data, use_geometric=False,
-                         pred_weight=0.5):
+                         pred_weight=None, rcnn_weights=None):
     for query_id, query in tqdm(
             enumerate(queries), total=len(queries), desc='query'):
         energy_list = []
@@ -618,7 +637,7 @@ def generate_energy_data(queries, path, if_data, use_geometric=False,
             iqd = ImageQueryData(
                 query, query_id, image_id, if_data,
                 use_geometric=use_geometric, compute_gt=False,
-                pred_weight=pred_weight)
+                pred_weight=pred_weight, rcnn_weights=rcnn_weights)
             iqd.compute_potential_data()
             energy_list.append(iqd.model_total_pot)
 
@@ -632,7 +651,7 @@ def generate_energy_data(queries, path, if_data, use_geometric=False,
 
 
 def generate_iou_data(queries, path, if_data, use_geometric=False,
-                      iqd_params=None, pred_weight=0.5):
+                      iqd_params=None, pred_weight=None):
     for query_id, query in tqdm(enumerate(queries), total=len(queries)):
         object_id_list = []
         iou_list = []

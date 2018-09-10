@@ -14,12 +14,10 @@ with open(get_config_path()) as f:
     out_path = cfg_data['file_paths']['output_path']
 
 
-def iou_check(queries, if_data, false_negs):
+def iou_check(queries, if_data):
     tp_simple = data_utils.get_partial_query_matches(if_data.vg_data, queries)
     energy_path = os.path.join(out_path, 'query_ious/')
     geom_energy_path = os.path.join(out_path, 'query_ious_geom/')
-    for query_index, image_index in false_negs:
-        tp_simple[query_index].append(image_index)
     data_simple = [(energy_path, 'factor graph'),
                    (geom_energy_path, 'geometric mean')]
     data_utils.get_iou_recall_values(
@@ -42,6 +40,4 @@ if __name__ == '__main__':
         image_query_data.generate_iou_data(
             queries, geom_batch_path, if_data, use_geometric=True)
 
-    false_neg_path = os.path.join(data_path, 'false_negs.csv')
-    false_negs = data_utils.get_false_negs(false_neg_path)
-    iou_check(queries, if_data, false_negs)
+    iou_check(queries, if_data)

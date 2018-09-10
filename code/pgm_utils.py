@@ -7,7 +7,8 @@ import scipy.io as sio
 import irsg_core.image_fetch_core as ifc
 
 
-def generate_pgm(if_data, verbose=False, pred_weight=None):
+def generate_pgm(if_data, verbose=False, pred_weight=None,
+                 rcnn_weights=None):
     # gather data from the if data object
     query_graph = if_data.current_sg_query
     object_detections = if_data.object_detections
@@ -84,6 +85,8 @@ def generate_pgm(if_data, verbose=False, pred_weight=None):
             log_scores = -np.log(detections[:, 4] + eps)
             if pred_weight is not None:
                 log_scores *= (1.0 - pred_weight)
+            if rcnn_weights is not None:
+                log_scores *= rcnn_weights[object_name]
             fid = gm.addFunction(log_scores)
         else:
             if verbose:

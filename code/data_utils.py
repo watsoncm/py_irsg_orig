@@ -275,3 +275,12 @@ def save_platt_data(text, path, platt_a, platt_b):
     platt_path = os.path.join(gmm_path, 'platt.csv')
     with open(platt_path, 'w') as f:
         f.write('{},{}'.format(platt_a, platt_b))
+
+
+def get_rcnn_weights(path):
+    weights = {}
+    with open(path) as f:
+        csv_reader = csv.reader(f)
+        for name, weight in csv_reader:
+            weights[name] = float(weight)
+    return weights
