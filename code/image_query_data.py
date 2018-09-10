@@ -411,16 +411,17 @@ class ImageQueryData(object):
 
         return model_total_pot, close_total_pot, gt_total_pot
 
-    def get_image_boxes(self):
+    def get_image_boxes(self, return_all=False):
         if not self.compute_gt:
             return None, None
         image_annos = self.image.annotations
         binary_triples = data_utils.make_array(image_annos.binary_triples)
-        model_sub_bbox = self.sub_boxes[self.model_sub_bbox_id]
-        model_obj_bbox = self.obj_boxes[self.model_obj_bbox_id]
+        if not return_all:
+            mean_ious = []
+            model_sub_bbox = self.sub_boxes[self.model_sub_bbox_id]
+            model_obj_bbox = self.obj_boxes[self.model_obj_bbox_id]
         image_objects = self.image.annotations.objects
         bbox_pairs = []
-        mean_ious = []
         for triple in binary_triples:
             trip_sub, trip_pred, trip_obj = data_utils.get_text_parts(
                 self.image, triple)
@@ -429,14 +430,18 @@ class ImageQueryData(object):
                 obj = image_objects[triple.object]
                 sub_bbox = data_utils.make_bbox(sub.bbox)
                 obj_bbox = data_utils.make_bbox(obj.bbox)
-                sub_iou = self.get_iou(sub_bbox, model_sub_bbox)
-                obj_iou = self.get_iou(obj_bbox, model_obj_bbox)
                 bbox_pairs.append((sub_bbox, obj_bbox))
-                mean_ious.append(np.mean((sub_iou, obj_iou)))
+                if not return_all:
+                    sub_iou = self.get_iou(sub_bbox, model_sub_bbox)
+                    obj_iou = self.get_iou(obj_bbox, model_obj_bbox)
+                    mean_ious.append(np.mean((sub_iou, obj_iou)))
         if len(bbox_pairs) == 0:
             raise ValueError('image incompatible with query')
-        bbox_index = np.argmax(mean_ious)
-        return bbox_pairs[bbox_index]
+        if return_all:
+            return bbox_pairs
+        else:
+            bbox_index = np.argmax(mean_ious)
+            return bbox_pairs[bbox_index]
 
     def compute_potential_data(self, use_relationships=True):
         self.model_sub_bbox_id, self.model_obj_bbox_id = self.get_model_boxes()
