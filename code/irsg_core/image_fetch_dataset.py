@@ -71,7 +71,7 @@ class CSVImageFetchDataset(ImageFetchDataset):
 
         # get class data
         classes = ['obj:{}'.format(name) for name in self.all_objs]
-        class_to_idx = dict(zip(classes, range(len(classes))))
+        class_to_idx = dict(zip(classes, range(1, len(classes) + 1)))
         self.potentials_data['classes'] = np.array(classes)
         self.potentials_data['class_to_idx'] = class_to_idx
 

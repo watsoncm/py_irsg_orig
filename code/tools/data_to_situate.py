@@ -1,4 +1,5 @@
 import os
+import csv
 import json
 import shutil
 from tqdm import tqdm
@@ -26,6 +27,7 @@ def generate_situations(queries, situation_path, if_data, if_data_test,
         tp_data_test[query_index].append(image_index)
 
     query_data = zip(queries, tp_data, tp_data_test)
+    all_neg_path = os.path.join(situation_path, 'negative-images')
     for index, (query, train_tps, test_tps) in tqdm(
             enumerate(query_data), total=len(queries), desc='queries'):
         iqd = ImageQueryData(query, index, 0, if_data)
@@ -34,7 +36,7 @@ def generate_situations(queries, situation_path, if_data, if_data_test,
         pos_path = os.path.join(query_path, query_name)
         neg_path = os.path.join(query_path, '{}-negative'.format(query_name))
         test_path = os.path.join(query_path, '{}-test'.format(query_name))
-        for path in (pos_path, neg_path, test_path):
+        for path in (pos_path, all_neg_path, test_path):
             if not os.path.exists(path):
                 os.makedirs(path)
         for tp_index in tqdm(train_tps, desc='train images'):
@@ -60,12 +62,51 @@ def generate_situations(queries, situation_path, if_data, if_data_test,
             with open(json_path, 'w') as f:
                 json.dump(json_data, f)
             shutil.copy(if_data.image_filename, pos_path)
+        for tp_index in tqdm(test_tps, desc='test images'):
+            if_data_test.configure(tp_index, query.annotations)
+            shutil.copy(if_data_test.image_filename, test_path)
+        rel_path = os.path.relpath(
+            all_neg_path, start=os.path.dirname(neg_path))
+        os.symlink(rel_path, neg_path)
 
-        for index in tqdm(range(len(
-                if_data_test.vg_data)), desc='test images'):
-            if_data.configure(index, query.annotations)
-            target_path = test_path if index in test_tps else neg_path
-            shutil.copy(if_data.image_filename, target_path)
+    for tn_index in tqdm(
+            [index for index in range(len(if_data_test.vg_data))
+             if all([index not in test_tps for test_tps in tp_data_test])]):
+        if_data_test.configure(tn_index, query.annotations)
+        shutil.copy(if_data_test.image_filename, all_neg_path)
+
+
+def generate_situate_rnns(queries, situation_rnn_path, if_data_test):
+    tp_data_test = ifu.get_partial_scene_matches(if_data_test.vg_data, queries)
+    neg_index = [index for index in range(len(if_data_test.vg_data))
+                 if all([index not in test_tps for test_tps in tp_data_test])]
+    for query_id, (query, tp_index) in tqdm(
+            enumerate(zip(queries, tp_data_test)),
+            total=len(queries), desc='queries'):
+        obj_names = [obj.names for obj in query.annotations.objects]
+        iqd = ImageQueryData(query, query_id, 0, if_data)
+        query_name = iqd.get_query_text().replace(' ', '-')
+        query_path = os.path.join(situation_rnn_path, query_name)
+        for image_id in tqdm(tp_index + neg_index, desc='images'):
+            if_data_test.configure(image_id, query.annotations)
+            image_name = os.path.basename(if_data_test.image_filename)
+            rcnn_name = '{}.csv'.format(
+                os.path.splitext(image_name)[0])
+            for obj_name in obj_names:
+                long_name = 'obj:{}'.format(obj_name)
+                obj_id = if_data_test.potentials_data[
+                    'class_to_idx'][long_name] - 1
+                box_score_data = if_data_test.potentials_data
+                boxes = box_score_data['boxes'][image_id][obj_id]
+                scores = box_score_data['scores'][image_id][obj_id]
+                obj_dir = os.path.join(query_path, obj_name)
+                rcnn_path = os.path.join(obj_dir, rcnn_name)
+                if not os.path.exists(obj_dir):
+                    os.makedirs(obj_dir)
+                with open(rcnn_path, 'w') as f:
+                    writer = csv.writer(f)
+                    for box, score in zip(boxes, scores):
+                        writer.writerow(list(box) + [score])
 
 
 if __name__ == '__main__':
@@ -74,6 +115,8 @@ if __name__ == '__main__':
     path = os.path.join(data_path, 'queries.txt')
     queries = query_viz.generate_queries_from_file(path)
     query_path = os.path.join(out_path, 'situations')
+    query_rcnn_path = os.path.join(out_path, 'situations_rcnn')
     false_neg_path = os.path.join(data_path, 'false_negs.csv')
     false_negs = data_utils.get_false_negs(false_neg_path)
     generate_situations(queries, query_path, if_data, if_data_test, false_negs)
+    # generate_situate_rnns(queries, query_rcnn_path, if_data_test)

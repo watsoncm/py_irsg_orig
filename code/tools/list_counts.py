@@ -29,6 +29,7 @@ def save_query_counts(queries, if_data, false_negs, path):
             full_negs = [index for index in range(len(if_data.vg_data))
                          if all([index not in image_index
                                  for image_index in tp_simple])]
+            print(full_negs)
         f.write('negatives for ALL queries: {}'.format(len(full_negs)))
 
 
