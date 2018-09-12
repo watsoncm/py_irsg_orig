@@ -6,6 +6,7 @@ import numpy as np
 import scipy.io.matlab.mio5_params as siom
 from tqdm import tqdm
 
+import data_utils
 import irsg_core.data_pull as dp
 import irsg_core.image_fetch_utils as ifu
 from image_query_data import ImageQueryData
@@ -30,7 +31,8 @@ def generate_tp_neg(tp_data_pos, n_queries, n_images, negs_per_query):
 
 def generate_all_query_plots(queries, if_data, condition_gmm=False,
                              visualize_gmm=False, negs_per_query=20,
-                             use_geometric=False, suffix=None):
+                             use_geometric=False, suffix=None,
+                             false_negs=None):
     """Generate plots for each given query."""
     tp_data_pos = ifu.get_partial_scene_matches(if_data.vg_data, queries)
     tp_data_neg = generate_tp_neg(tp_data_pos, len(queries),
@@ -45,10 +47,12 @@ def generate_all_query_plots(queries, if_data, condition_gmm=False,
     # Run all positives and negatives
     for tp_data, energies, is_pos in ((tp_data_pos, positive_energies, True),
                                       (tp_data_neg, negative_energies, False)):
-        label = 'pos' if is_pos else 'neg'
         for query_index, query in tqdm(enumerate(queries), desc='graphs',
                                        total=len(queries)):
-            for image_index in tp_data[query_index]:
+            for image_index in tqdm(tp_data[query_index], desc='images'):
+                is_false_neg = (false_negs is not None and
+                                (query_index, image_index) in false_negs)
+                label = 'pos' if is_pos or is_false_neg else 'neg'
                 iqd = ImageQueryData(query, query_index, image_index, if_data,
                                      compute_gt=is_pos,
                                      use_geometric=use_geometric)
@@ -81,8 +85,9 @@ def generate_all_query_plots(queries, if_data, condition_gmm=False,
 
 def generate_test_plot(queries, if_data):
     """Generate a simple test plot to see if the program works."""
-    iqd = ImageQueryData(queries['simple_graphs'][4], 4, 38, if_data)
-    iqd.compute_plot_data(condition_gmm=True, visualize_gmm=True)
+    iqd = ImageQueryData(queries[0], 0, 164, if_data,
+                         use_geometric=True, compute_gt=False)
+    iqd.compute_plot_data(condition_gmm=True)
     iqd.generate_plot()
 
 
@@ -157,13 +162,16 @@ def generate_queries_from_file(path, use_attrs=False):
 
 
 if __name__ == '__main__':
-    _, _, _, _, queries, if_data = dp.get_all_data('psu', split='val',
-                                                   use_csv=True)
+    _, _, _, _, _, if_data = dp.get_all_data('stanford', split='test',
+                                             use_csv=True)
     path = os.path.join(data_path, 'queries.txt')
     queries = generate_queries_from_file(path)
-    generate_all_query_plots(queries, if_data, condition_gmm=True,
-                             visualize_gmm=False)
+    false_neg_path = os.path.join(data_path, 'false_negs.csv')
+    false_negs = data_utils.get_false_negs(false_neg_path)
+    # generate_all_query_plots(queries, if_data, condition_gmm=True,
+    #                          visualize_gmm=False, false_negs=false_negs)
     generate_all_query_plots(queries, if_data, condition_gmm=True,
                              visualize_gmm=False, use_geometric=True,
-                             suffix='geom')
+                             suffix='geom', false_negs=false_negs)
+
     # generate_test_plot(queries, if_data)

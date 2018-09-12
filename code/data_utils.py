@@ -92,7 +92,7 @@ def get_r_at_k(base_dir, gt_map, n_images, file_suffix='_energy_values'):
 
 
 def get_single_image_r_at_k(base_dir, gt_map, n_images,
-                            file_suffix='_energy_values'):
+                            file_suffix='_energy_values'):  # TODO: cut down, print, do by hand and compare
     full_negs = [index for index in range(n_images)
                  if all(index not in gts for gts in gt_map)]
     recalls = []
@@ -108,6 +108,7 @@ def get_single_image_r_at_k(base_dir, gt_map, n_images,
             recalls.append([])
             continue
         recall = np.zeros(len(full_negs) + 1, dtype=np.float)
+        import pdb; pdb.set_trace()
         for image_index in gts:
             energy_ix = np.isin(energies[:, 0], full_negs + [image_index])
             image_energies = energies[energy_ix]
@@ -153,11 +154,17 @@ def get_recall_values(data, ground_truth_map, n_images, show_plot=False,
 
 def get_single_image_recall_values(data, ground_truth_map, n_images,
                                    show_plot=False, save_path=None,
-                                   do_holdout=False, x_limit=100):
+                                   do_holdout=False, x_limit=100,
+                                   situate_recalls=None):
+
     all_values = []
     for path, label in data:
         vals = get_single_image_r_at_k(path, ground_truth_map, n_images)
         all_values.append(vals)
+
+    if situate_recalls is not None:
+        data.append((None, 'Situate'))
+        all_values.append(situate_recalls)
 
     for query_index, label_vals in enumerate(zip(*all_values)):
         plot_handles = []

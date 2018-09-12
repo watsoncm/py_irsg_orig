@@ -1,6 +1,8 @@
 import os
 import json
 
+import numpy as np
+
 import query_viz
 import data_utils
 import image_query_data
@@ -17,7 +19,7 @@ with open(get_config_path()) as f:
     csv_path = cfg_data['file_paths']['csv_path']
 
 
-def recall_check(queries, if_data, false_negs):
+def recall_check(queries, if_data, false_negs, situate_recalls):
     """Compute recalls for a given set of queries and plot."""
     tp_simple = data_utils.get_partial_query_matches(if_data.vg_data, queries)
     for query_index, image_index in false_negs:
@@ -30,8 +32,20 @@ def recall_check(queries, if_data, false_negs):
                    (geom_energy_path, 'geometric mean'),
                    (weighted_energy_path, 'weighted IRSG'),
                    (rcnn_energy_path, 'RCNN-weighted IRSG')]
+
     data_utils.get_single_image_recall_values(
-        data_simple, tp_simple, len(if_data.vg_data), show_plot=True)
+        data_simple, tp_simple, len(if_data.vg_data), show_plot=True,
+        situate_recalls=situate_recalls)
+
+
+def get_situate_recalls(situate_path):
+    recalls = []
+    for query_index in range(len(os.listdir(situate_path))):
+        csv_path = os.path.join(
+            situate_path, 'q{:03d}_recalls.csv'.format(query_index))
+        recall_array = np.loadtxt(csv_path, delimiter=',').reshape(-1)
+        recalls.append(list(recall_array))
+    return recalls
 
 
 if __name__ == '__main__':
@@ -65,6 +79,9 @@ if __name__ == '__main__':
             queries, rcnn_batch_path, if_data,
             rcnn_weights=data_utils.get_rcnn_weights(rcnn_path))
 
+    situate_path = os.path.join(data_path, 'situate_recalls')
+    situate_recalls = get_situate_recalls(situate_path)
+
     false_neg_path = os.path.join(data_path, 'false_negs.csv')
     false_negs = data_utils.get_false_negs(false_neg_path)
-    recall_check(queries, if_data, false_negs)
+    recall_check(queries, if_data, false_negs, situate_recalls)
