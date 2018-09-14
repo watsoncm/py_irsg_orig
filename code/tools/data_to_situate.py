@@ -27,8 +27,6 @@ def generate_situations(queries, situation_path, if_data, if_data_test,
     for query_index, image_index in false_negs:
         tp_data_test[query_index].append(image_index)
 
-    import pdb; pdb.set_trace()
-
     query_data = zip(queries, tp_data, tp_data_test)
     all_neg_path = os.path.join(situation_path, 'negative-images')
     for index, (query, train_tps, test_tps) in tqdm(
