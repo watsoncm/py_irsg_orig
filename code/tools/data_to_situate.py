@@ -43,11 +43,7 @@ def generate_situations(queries, situation_path, if_data, if_data_test,
         for tp_index in tqdm(train_tps, desc='train images'):
             train_iqd = ImageQueryData(query, index, tp_index, if_data)
             if_data.configure(tp_index, query.annotations)
-            try:
-                box_pairs = train_iqd.get_image_boxes(return_all=True)
-            except ValueError:  # small issue with some train queries
-                print('skipping!')
-                continue
+            box_pairs = train_iqd.get_image_boxes(return_all=True)
             sub_box, obj_box = [list(pairs) for pairs in
                                 box_pairs[np.random.choice(len(box_pairs))]]
             image_data = if_data.vg_data[tp_index]
