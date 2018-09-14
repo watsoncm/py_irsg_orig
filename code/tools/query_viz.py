@@ -34,7 +34,8 @@ def generate_tp_neg(tp_data_pos, n_queries, n_images, negs_per_query):
 def generate_all_query_plots(queries, tp_data_pos, tp_data_neg,
                              if_data, condition_gmm=False,
                              visualize_gmm=False, use_geometric=False,
-                             suffix=None, false_negs=None):
+                             use_alt_geom=False, suffix=None,
+                             false_negs=None):
     """Generate plots for each given query."""
     suffix_text = '' if suffix is None else '_' + suffix
     output_dir = os.path.join(out_path, 'query_viz' + suffix_text)
@@ -54,7 +55,8 @@ def generate_all_query_plots(queries, tp_data_pos, tp_data_neg,
                 label = 'pos' if is_pos or is_false_neg else 'neg'
                 iqd = ImageQueryData(query, query_index, image_index, if_data,
                                      compute_gt=is_pos and not is_false_neg,
-                                     use_geometric=use_geometric)
+                                     use_geometric=use_geometric,
+                                     use_alt_geom=use_alt_geom)
                 try:
                     iqd.compute_plot_data(condition_gmm=condition_gmm,
                                           visualize_gmm=visualize_gmm)
@@ -180,5 +182,9 @@ if __name__ == '__main__':
     generate_all_query_plots(queries, tp_data_pos, tp_data_neg,
                              if_data, condition_gmm=True,
                              visualize_gmm=False, use_geometric=True,
+                             suffix='true_geom', false_negs=false_negs)
+    generate_all_query_plots(queries, tp_data_pos, tp_data_neg,
+                             if_data, condition_gmm=True,
+                             visualize_gmm=False, use_alt_geom=True,
                              suffix='geom', false_negs=false_negs)
     # generate_test_plot(queries, if_data)
