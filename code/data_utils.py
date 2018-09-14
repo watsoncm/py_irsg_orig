@@ -92,7 +92,7 @@ def get_r_at_k(base_dir, gt_map, n_images, file_suffix='_energy_values'):
 
 
 def get_single_image_r_at_k(base_dir, gt_map, n_images,
-                            file_suffix='_energy_values'):  # TODO: cut down, print, do by hand and compare
+                            file_suffix='_energy_values'):
     full_negs = [index for index in range(n_images)
                  if all(index not in gts for gts in gt_map)]
     recalls = []
@@ -108,7 +108,6 @@ def get_single_image_r_at_k(base_dir, gt_map, n_images,
             recalls.append([])
             continue
         recall = np.zeros(len(full_negs) + 1, dtype=np.float)
-        import pdb; pdb.set_trace()
         for image_index in gts:
             energy_ix = np.isin(energies[:, 0], full_negs + [image_index])
             image_energies = energies[energy_ix]

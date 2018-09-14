@@ -76,7 +76,8 @@ class ConditionedIRSGMM(object):
 
 class ImageQueryData(object):
     def __init__(self, query, query_id, image_id, if_data, compute_gt=True,
-                 pred_weight=None, use_geometric=False, rcnn_weights=None):
+                 pred_weight=None, use_geometric=False,
+                 use_alt_geom=False, rcnn_weights=None):
         self.query = query
         self.query_id = query_id
         query_annos = query.annotations
@@ -110,6 +111,10 @@ class ImageQueryData(object):
         self.initialized_ = False
         self.compute_gt = compute_gt
         self.use_geometric = use_geometric
+        self.use_alt_geom = use_alt_geom
+        if use_geometric and use_alt_geom:
+            raise ValueError('Only one of use_geometric and use_alt_geom'
+                             'can be chosen at a time')
         self.obj_weight = None if pred_weight is None else 1.0 - pred_weight
         self.pred_weight = pred_weight
         self.rcnn_weights = rcnn_weights
@@ -390,22 +395,25 @@ class ImageQueryData(object):
         return np.array(pil_image)
 
     def get_total_pots(self):
-        if self.use_geometric:
+        if self.use_alt_geom:
             model_total_pot = np.sqrt(max(0, self.model_sub_pot) *
                                       max(0, self.model_obj_pot))
         else:
             model_total_pot = self.model_sub_pot + self.model_obj_pot
-            model_total_pot += self.model_pred_score
+            if not self.use_geometric:
+                model_total_pot += self.model_pred_score
         if self.compute_gt:
-            if self.use_geometric:
+            if self.use_alt_geom:
                 gt_total_pot = np.sqrt(max(0, self.close_sub_pot) *
                                        max(0, self.close_obj_pot))
                 close_total_pot = gt_total_pot
             else:
                 gt_total_pot = self.close_sub_pot + self.close_obj_pot
-                gt_total_pot += self.gt_pred_score
+                if not self.use_geometric:
+                    gt_total_pot += self.gt_pred_score
                 close_total_pot = self.close_sub_pot + self.close_obj_pot
-                close_total_pot += self.close_pred_score
+                if not self.use_geometric:
+                    close_total_pot += self.close_pred_score
         else:
             close_total_pot, gt_total_pot = None, None
 
@@ -634,15 +642,17 @@ class ImageQueryData(object):
 
 
 def generate_energy_data(queries, path, if_data, use_geometric=False,
-                         pred_weight=None, rcnn_weights=None):
+                         use_alt_geom=False, pred_weight=None,
+                         rcnn_weights=None):
     for query_id, query in tqdm(
             enumerate(queries), total=len(queries), desc='query'):
         energy_list = []
         for image_id in tqdm(range(len(if_data.vg_data)), desc='image'):
             iqd = ImageQueryData(
                 query, query_id, image_id, if_data,
-                use_geometric=use_geometric, compute_gt=False,
-                pred_weight=pred_weight, rcnn_weights=rcnn_weights)
+                use_geometric=use_geometric, use_alt_geom=use_alt_geom,
+                compute_gt=False, pred_weight=pred_weight,
+                rcnn_weights=rcnn_weights)
             iqd.compute_potential_data()
             energy_list.append(iqd.model_total_pot)
 

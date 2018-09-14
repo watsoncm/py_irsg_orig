@@ -26,10 +26,13 @@ def save_query_counts(queries, if_data, false_negs, path):
             f.write('{} ({} pos, {} neg)\n'.format(
                 iqd.get_query_text(), len(image_index),
                 len(if_data.vg_data) - len(image_index)))
+            f.write('positives: {}\n'.format(image_index))
+            duplicates = list(set([index for index in image_index
+                                   if image_index.count(index) > 1]))
+            f.write('duplicates: {}\n\n'.format(duplicates))
             full_negs = [index for index in range(len(if_data.vg_data))
                          if all([index not in image_index
                                  for image_index in tp_simple])]
-            print(full_negs)
         f.write('negatives for ALL queries: {}'.format(len(full_negs)))
 
 

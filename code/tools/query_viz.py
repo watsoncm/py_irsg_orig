@@ -8,9 +8,11 @@ from tqdm import tqdm
 
 import data_utils
 import irsg_core.data_pull as dp
-import irsg_core.image_fetch_utils as ifu
 from image_query_data import ImageQueryData
 from config import get_config_path
+
+
+NEGS_PER_QUERY = 30
 
 with open(get_config_path()) as f:
     cfg_data = json.load(f)
@@ -29,14 +31,11 @@ def generate_tp_neg(tp_data_pos, n_queries, n_images, negs_per_query):
     return tp_data_neg
 
 
-def generate_all_query_plots(queries, if_data, condition_gmm=False,
-                             visualize_gmm=False, negs_per_query=20,
-                             use_geometric=False, suffix=None,
-                             false_negs=None):
+def generate_all_query_plots(queries, tp_data_pos, tp_data_neg,
+                             if_data, condition_gmm=False,
+                             visualize_gmm=False, use_geometric=False,
+                             suffix=None, false_negs=None):
     """Generate plots for each given query."""
-    tp_data_pos = ifu.get_partial_scene_matches(if_data.vg_data, queries)
-    tp_data_neg = generate_tp_neg(tp_data_pos, len(queries),
-                                  len(if_data.vg_data), negs_per_query)
     suffix_text = '' if suffix is None else '_' + suffix
     output_dir = os.path.join(out_path, 'query_viz' + suffix_text)
     if not os.path.exists(output_dir):
@@ -54,16 +53,17 @@ def generate_all_query_plots(queries, if_data, condition_gmm=False,
                                 (query_index, image_index) in false_negs)
                 label = 'pos' if is_pos or is_false_neg else 'neg'
                 iqd = ImageQueryData(query, query_index, image_index, if_data,
-                                     compute_gt=is_pos,
+                                     compute_gt=is_pos and not is_false_neg,
                                      use_geometric=use_geometric)
                 try:
                     iqd.compute_plot_data(condition_gmm=condition_gmm,
                                           visualize_gmm=visualize_gmm)
                 except ValueError:
                     continue
-                image_format = 'q{:03d}_i{:03d}_{}_{:.3f}.png'
-                image_name = image_format.format(query_index, image_index,
-                                                 label, iqd.model_total_pot)
+                image_format = '{:.3f}_q{:03d}_i{:03d}_{}.png'
+                image_name = image_format.format(iqd.model_total_pot,
+                                                 query_index, image_index,
+                                                 label)
                 save_path = os.path.join(output_dir, image_name)
                 iqd.generate_plot(save_path=save_path)
                 energies[save_path] = iqd.model_total_pot
@@ -162,16 +162,23 @@ def generate_queries_from_file(path, use_attrs=False):
 
 
 if __name__ == '__main__':
-    _, _, _, _, _, if_data = dp.get_all_data('stanford', split='test',
-                                             use_csv=True)
+    _, _, _, _, _, if_data = dp.get_all_data(
+        'stanford', split='test', use_csv=True)
     path = os.path.join(data_path, 'queries.txt')
     queries = generate_queries_from_file(path)
     false_neg_path = os.path.join(data_path, 'false_negs.csv')
     false_negs = data_utils.get_false_negs(false_neg_path)
-    # generate_all_query_plots(queries, if_data, condition_gmm=True,
-    #                          visualize_gmm=False, false_negs=false_negs)
-    generate_all_query_plots(queries, if_data, condition_gmm=True,
+    tp_data_pos = data_utils.get_partial_query_matches(
+        if_data.vg_data, queries)
+    for query_index, image_index in false_negs:
+        tp_data_pos[query_index].append(image_index)
+    tp_data_neg = generate_tp_neg(tp_data_pos, len(queries),
+                                  len(if_data.vg_data), NEGS_PER_QUERY)
+    generate_all_query_plots(queries, tp_data_pos, tp_data_neg,
+                             if_data, condition_gmm=True,
+                             visualize_gmm=False, false_negs=false_negs)
+    generate_all_query_plots(queries, tp_data_pos, tp_data_neg,
+                             if_data, condition_gmm=True,
                              visualize_gmm=False, use_geometric=True,
                              suffix='geom', false_negs=false_negs)
-
     # generate_test_plot(queries, if_data)
