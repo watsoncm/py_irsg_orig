@@ -21,10 +21,13 @@ with open(get_config_path()) as f:
 
 def generate_situations(queries, situation_path, if_data, if_data_test,
                         false_negs):
-    tp_data = ifu.get_partial_scene_matches(if_data.vg_data, queries)
-    tp_data_test = ifu.get_partial_scene_matches(if_data_test.vg_data, queries)
+    tp_data = data_utils.get_partial_query_matches(if_data.vg_data, queries)
+    tp_data_test = data_utils.get_partial_query_matches(
+        if_data_test.vg_data, queries)
     for query_index, image_index in false_negs:
         tp_data_test[query_index].append(image_index)
+
+    import pdb; pdb.set_trace()
 
     query_data = zip(queries, tp_data, tp_data_test)
     all_neg_path = os.path.join(situation_path, 'negative-images')
@@ -45,6 +48,7 @@ def generate_situations(queries, situation_path, if_data, if_data_test,
             try:
                 box_pairs = train_iqd.get_image_boxes(return_all=True)
             except ValueError:  # small issue with some train queries
+                print('skipping!')
                 continue
             sub_box, obj_box = [list(pairs) for pairs in
                                 box_pairs[np.random.choice(len(box_pairs))]]
@@ -123,5 +127,5 @@ if __name__ == '__main__':
     query_rcnn_path = os.path.join(out_path, 'situations_rcnn')
     false_neg_path = os.path.join(data_path, 'false_negs.csv')
     false_negs = data_utils.get_false_negs(false_neg_path)
-    # generate_situations(queries, query_path, if_data, if_data_test, false_negs)
-    generate_situate_rnns(queries, query_path, query_rcnn_path, if_data_test)
+    generate_situations(queries, query_path, if_data, if_data_test, false_negs)
+    # generate_situate_rnns(queries, query_path, query_rcnn_path, if_data_test)

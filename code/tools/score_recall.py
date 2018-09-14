@@ -35,19 +35,21 @@ def recall_check(queries, if_data, false_negs, situate_recalls):
                    (weighted_energy_path, 'weighted IRSG'),
                    (rcnn_energy_path, 'RCNN-weighted IRSG')]
 
-    situate_recalls = [[0 for _ in range(378)] for _ in range(15)]  # TODO: no
     data_utils.get_single_image_recall_values(
         data_simple, tp_simple, len(if_data.vg_data), show_plot=True,
         situate_recalls=situate_recalls)
 
 
-def get_situate_recalls(situate_path):
-    recalls = []
-    for query_index in range(len(os.listdir(situate_path))):
+def get_situate_recalls(num_queries, situate_path):
+    recalls = [[] for _ in range(num_queries)]
+    for query_index in range(num_queries):
         csv_path = os.path.join(
             situate_path, 'q{:03d}_recalls.csv'.format(query_index))
-        recall_array = np.loadtxt(csv_path, delimiter=',').reshape(-1)
-        recalls.append(list(recall_array))
+        try:
+            recall_array = np.loadtxt(csv_path, delimiter=',').reshape(-1)
+        except IOError:
+            continue
+        recalls[query_index] = list(recall_array)
     return recalls
 
 
@@ -89,7 +91,7 @@ if __name__ == '__main__':
             rcnn_weights=data_utils.get_rcnn_weights(rcnn_path))
 
     situate_path = os.path.join(data_path, 'situate_recalls')
-    situate_recalls = get_situate_recalls(situate_path)
+    situate_recalls = get_situate_recalls(len(queries), situate_path)
 
     false_neg_path = os.path.join(data_path, 'false_negs.csv')
     false_negs = data_utils.get_false_negs(false_neg_path)

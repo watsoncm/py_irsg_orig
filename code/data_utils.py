@@ -175,6 +175,8 @@ def get_single_image_recall_values(data, ground_truth_map, n_images,
         plt.title('Query {}'.format(query_index))
 
         for (_, label), vals in zip(data, label_vals):
+            if query_index == 7 and label == 'geometric mean on potentials':
+                import pdb; pdb.set_trace()
             plot_handle = plt.plot(
                 np.arange(1, len(vals) + 1), vals, label=label)[0]
             plot_handles.append(plot_handle)

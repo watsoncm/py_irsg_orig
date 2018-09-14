@@ -8,11 +8,11 @@ import numpy as np
 import scipy.io.matlab.mio5_params as siom
 from tqdm import tqdm
 
+import data_utils
 import irsg_core.data_pull as dp
 import irsg_core.image_fetch_core as ifc
 import irsg_core.image_fetch_plot as ifp
 import irsg_core.image_fetch_wrappers as ifw
-import irsg_core.image_fetch_utils as ifu
 from gmm_viz import visualize_gmm
 
 CSV_DESCRIPTION = '''# query_index: which constructed query we're on
@@ -269,7 +269,8 @@ def test_gmm_density(queries, tp_data, vgd, bin_mod, ifdata, output_path):
 if __name__ == '__main__':
     vgd, _, _, bin_mod, _, ifdata = dp.get_all_data(use_csv=True)
     queries = get_double_queries(vgd)
-    tp_simple = ifu.get_partial_scene_matches(vgd['vg_data_test'], queries)
+    tp_simple = data_utils.get_partial_scene_matches(
+        vgd['vg_data_test'], queries)
     draw_double_plots(queries, tp_simple, ifdata)
     output_path = os.path.join(out_path, 'gmm_density.csv')
     test_gmm_density(queries, tp_simple, vgd, bin_mod, ifdata, output_path)

@@ -9,7 +9,6 @@ import query_viz
 import data_utils
 import image_query_data
 import irsg_core.data_pull as dp
-import irsg_core.image_fetch_utils as ifu
 from config import get_config_path
 from image_query_data import ImageQueryData
 from collections import defaultdict
@@ -33,7 +32,8 @@ def run_cross_val_test(if_data, queries, path, index, pred_weight):
                                           pred_weight=pred_weight)
     data_simple = [(path, 'xval {} energies'.format(index))]
     tp_simple = [list(sublist) for sublist in
-                 ifu.get_partial_scene_matches(if_data.vg_data, queries)]
+                 data_utils.get_partial_scene_matches(
+                     if_data.vg_data, queries)]
     recalls = data_utils.get_recall_values(data_simple, np.array(tp_simple),
                                            len(if_data.vg_data))[0]
     return recalls
