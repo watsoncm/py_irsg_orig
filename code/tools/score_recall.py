@@ -24,11 +24,14 @@ def recall_check(queries, if_data, false_negs, situate_recalls):
     tp_simple = data_utils.get_partial_query_matches(if_data.vg_data, queries)
     for query_index, image_index in false_negs:
         tp_simple[query_index].append(image_index)
-    energy_path = os.path.join(out_path, 'query_energies/')
-    geom_energy_path = os.path.join(out_path, 'query_energies_geom/')
-    true_geom_energy_path = os.path.join(out_path, 'query_energies_true_geom/')
-    weighted_energy_path = os.path.join(out_path, 'query_energies_weighted/')
-    rcnn_energy_path = os.path.join(out_path, 'query_energies_rcnn/')
+    energy_path = os.path.join(out_path, 'query_energies_psu/')
+    geom_energy_path = os.path.join(out_path, 'query_energies_geom_psu/')
+    true_geom_energy_path = os.path.join(
+        out_path, 'query_energies_true_geom_psu/')
+    weighted_energy_path = os.path.join(
+        out_path, 'query_energies_weighted_psu/')
+    rcnn_energy_path = os.path.join(
+        out_path, 'query_energies_rcnn_psu/')
     data_simple = [(energy_path, 'vanilla IRSG'),
                    (geom_energy_path, 'geometric mean on potentials'),
                    (true_geom_energy_path, 'true geometric mean'),
@@ -57,32 +60,34 @@ if __name__ == '__main__':
     query_path = os.path.join(data_path, 'queries.txt')
     queries = query_viz.generate_queries_from_file(query_path)
 
-    if_data = dp.get_ifdata(use_csv=True)
-    batch_path = os.path.join(out_path, 'query_energies/')
+    if_data = dp.get_ifdata(dataset='psu', split='test', use_csv=True)
+    batch_path = os.path.join(out_path, 'query_energies_psu/')
     if not os.path.exists(batch_path):
         os.mkdir(batch_path)
         image_query_data.generate_energy_data(queries, batch_path, if_data)
 
-    geom_batch_path = os.path.join(out_path, 'query_energies_geom/')
+    geom_batch_path = os.path.join(out_path, 'query_energies_geom_psu/')
     if not os.path.exists(geom_batch_path):
         os.mkdir(geom_batch_path)
         image_query_data.generate_energy_data(
             queries, geom_batch_path, if_data, use_alt_geom=True)
 
-    true_geom_batch_path = os.path.join(out_path, 'query_energies_true_geom/')
+    true_geom_batch_path = os.path.join(
+        out_path, 'query_energies_true_geom_psu/')
     if not os.path.exists(true_geom_batch_path):
         os.mkdir(true_geom_batch_path)
         image_query_data.generate_energy_data(
             queries, true_geom_batch_path, if_data, use_geometric=True)
 
-    weighted_batch_path = os.path.join(out_path, 'query_energies_weighted/')
+    weighted_batch_path = os.path.join(
+        out_path, 'query_energies_weighted_psu/')
     if not os.path.exists(weighted_batch_path):
         os.mkdir(weighted_batch_path)
         image_query_data.generate_energy_data(
             queries, weighted_batch_path, if_data,
             pred_weight=PRED_WEIGHT)
 
-    rcnn_batch_path = os.path.join(out_path, 'query_energies_rcnn/')
+    rcnn_batch_path = os.path.join(out_path, 'query_energies_rcnn_psu/')
     rcnn_path = os.path.join(csv_path, 'rcnn_weights.csv')
     if not os.path.exists(rcnn_batch_path):
         os.mkdir(rcnn_batch_path)

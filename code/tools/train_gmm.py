@@ -99,13 +99,14 @@ if __name__ == '__main__':
     ifdata = dp.get_ifdata(use_csv=True, split='train')
     output_paths = [os.path.join(csv_path, 'datasets', 'psu',
                                  split, 'rel_files')
-                    for split in ('train', 'val')]
+                    for split in ('train', 'val', 'test')]
     query_path = os.path.join(data_path, 'queries.txt')
     rel_list = parse_queries(query_path)
 
     indices = data_utils.get_indices(data_path, 'train')
     rel_dict = get_binary_model_data(ifdata, indices, rels=rel_list)
-    for text, bbox_pairs in rel_dict.iteritems():
+
+    for text, bbox_pairs in list(rel_dict.iteritems()):
         print('text: {}'.format(text))
         gmm_data = train_gmm(bbox_pairs)
         for output_path in output_paths:

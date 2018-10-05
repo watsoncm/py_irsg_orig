@@ -60,6 +60,8 @@ class CSVImageFetchDataset(ImageFetchDataset):
         # get vg_data
         with open(os.path.join(self.split_path, 'index.txt')) as f:
             self.indices = [int(line) for line in f.read().splitlines()]
+        if self.split == 'test':
+            self.indices = [index - self.indices[0] for index in self.indices]
         self.vg_data = self.load_vg_data(vg_data)
 
         # get box and score data
@@ -174,7 +176,7 @@ class CSVImageFetchDataset(ImageFetchDataset):
             self.image_filename = self.base_image_path + os.path.basename(
                 self.vg_data[self.current_image_num].image_path)
 
-        if sg_query is not None or sg_query != self.current_sg_query:
+        if sg_query is not None and sg_query != self.current_sg_query:
             self.current_sg_query = sg_query
             if self.split == 'train':
                 self.per_object_attributes = None

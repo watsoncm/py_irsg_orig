@@ -48,15 +48,21 @@ if __name__ == '__main__':
                 ('obj_rcnn_train_smol', 'obj_rcnn_val_smol')]
     out_paths = [os.path.join(csv_path, 'datasets', *names) for names in
                  (('psu', 'train', 'obj_files'),
-                  ('psu', 'val', 'obj_files'))]
+                  ('psu', 'val', 'obj_files'),
+                  ('psu', 'test', 'obj_files'))]
 
     for in_path, out_path in tqdm(zip(in_paths, out_paths), desc='paths'):
         convert_rcnn_data(in_path, out_path)
 
     train_indices = data_utils.get_indices(data_path, 'train')
     val_indices = data_utils.get_indices(data_path, 'val')
+    test_indices = [index - (len(train_indices) + len(val_indices))
+                    for index in data_utils.get_indices(data_path, 'test')]
+
     data_path = os.path.join(csv_path, 'datasets', 'psu')
     with open(os.path.join(data_path, 'train', 'index.txt'), 'w') as f:
         f.write('\n'.join([str(index) for index in train_indices]))
     with open(os.path.join(data_path, 'val', 'index.txt'), 'w') as f:
         f.write('\n'.join([str(index) for index in val_indices]))
+    with open(os.path.join(data_path, 'test', 'index.txt'), 'w') as f:
+        f.write('\n'.join([str(index) for index in test_indices]))

@@ -125,12 +125,17 @@ if __name__ == '__main__':
     psu_path = os.path.join(csv_path, 'datasets', 'psu')
     obj_train_path = os.path.join(psu_path, 'train', 'obj_files')
     obj_val_path = os.path.join(psu_path, 'val', 'obj_files')
+    obj_test_path = os.path.join(psu_path, 'test', 'obj_files')
     rel_train_path = os.path.join(psu_path, 'train', 'rel_files')
     rel_val_path = os.path.join(psu_path, 'val', 'rel_files')
+    rel_test_path = os.path.join(psu_path, 'test', 'rel_files')
 
-    # obj_data = get_rcnn_data(obj_train_path, ifdata, indices,
-    #                          desc='objs')
     rel_data = get_gmm_data(rel_train_path, ifdata, indices,
                             desc='rels', negs_per_image=NUM_NEGS)
-    # save_platt_params(obj_data, obj_val_path)
     save_platt_params(rel_data, rel_val_path)
+    save_platt_params(rel_data, rel_test_path)
+
+    obj_data = get_rcnn_data(obj_train_path, ifdata, indices,
+                             desc='objs')
+    save_platt_params(obj_data, obj_val_path)
+    save_platt_params(obj_data, obj_test_path)
